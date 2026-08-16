@@ -1,3 +1,1 @@
-[2026-08-16T18:52:09.755Z] 6:52:09 PM [vite] (client) page reload index.html
-[2026-08-16T18:52:09.828Z] 6:52:09 PM [vite] changed tsconfig file detected: /home/ubuntu/egypt-employment-contract-generator/tsconfig.json - Clearing cache and forcing full-reload to ensure TypeScript is compiled with updated config values.
-[2026-08-16T18:52:09.831Z] 6:52:09 PM [vite] (client) page reload client/index.html
+[2026-08-16T18:52:45.704Z] 6:52:45 PM [vite] (client) page reload index.html
