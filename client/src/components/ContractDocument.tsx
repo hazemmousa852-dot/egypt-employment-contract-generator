@@ -6,11 +6,22 @@
 import type { ContractData } from "@/lib/contract";
 import { arabicNumeral, dateArabic, dateArabicShort, durationText, formatSalary, totalMonths } from "@/lib/contract";
 import { buildClauses } from "@/lib/clauses";
+import React from "react";
 import StampLogo from "@/components/StampLogo";
 
 interface Props {
   data: ContractData;
   forPrint?: boolean; // true => تُعرض داخل منطقة @media print
+}
+
+/** تحويل **نص** داخل البند إلى <strong> لعرض نوع العقد وفترة العقد بخط واضح */
+function renderClauseText(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) =>
+    part.startsWith("**") && part.endsWith("**")
+      ? <strong key={i}>{part.slice(2, -2)}</strong>
+      : part,
+  );
 }
 
 function LogoBlock({ data }: { data: ContractData }) {
@@ -82,9 +93,9 @@ function ContractBody({ data }: { data: ContractData }) {
           <div key={c.number}>
             <h2 className="font-bold text-base mb-0.5">
               البند ({arabicNumeral(c.number)}): {c.title}
-              <span className="text-xs text-[#8B2635] font-normal mr-2">— {c.articleRef}</span>
+              {c.articleRef ? <span className="text-xs text-[#8B2635] font-normal mr-2">— {c.articleRef}</span> : null}
             </h2>
-            <p className="text-[13pt] leading-[2.1] whitespace-pre-line">{c.text}</p>
+            <p className="text-[13pt] leading-[2.1] whitespace-pre-line">{renderClauseText(c.text)}</p>
           </div>
         ))}
       </div>

@@ -152,7 +152,7 @@ export default function Home() {
           <div className="chancery-rule" />
           <div className="container flex items-center justify-center gap-3 bg-[oklch(0.45_0.19_25)] py-3 text-[15px] font-semibold text-white">
             <StampLogo size={24} />
-            <span>أداة حصرية للمتدربين مع الأستاذ حازم موسى في شئون العاملين والمرتبات بكل دعائي</span>
+            <span>أداة حصرية للمتدربين مع الأستاذ حازم موسى في شئون العاملين والمرتبات</span>
           </div>
           <div className="chancery-rule" />
         </div>
