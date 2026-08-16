@@ -1,0 +1,34 @@
+{
+  "build_command": "pnpm run build",
+  "capabilities": [],
+  "dev_command": "pnpm run dev",
+  "env_vars": {},
+  "experiments": null,
+  "git_remote": {
+    "repo_url": "https://7f0548f6b28a1758d9bf7be630d36cb4.artifacts.cloudflare.net/git/prod/HhkUnjXb9psDStghgsKXFC.git",
+    "expiration": "2026-08-17T16:52:41.815Z",
+    "token": "art_v2_x_b6f13e5af61e5d3e1f011915f8038eb98c671a91?expires=1786985561",
+    "backend": "GIT_BACKEND_ARTIFACTS"
+  },
+  "name": "egypt-employment-contract-generator",
+  "path": "/home/ubuntu/egypt-employment-contract-generator",
+  "port": 3000,
+  "secrets": {
+    "BUILT_IN_FORGE_API_KEY": "YkM7PthVERENKqwosyStmT",
+    "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
+    "JWT_SECRET": "DaHfcGvLYBcYjSrU3cHeyU",
+    "OAUTH_SERVER_URL": "https://api.manus.im",
+    "OWNER_NAME": "Hazem Moussa",
+    "OWNER_OPEN_ID": "UjCgTJgeHVJER3kBMPV8CJ",
+    "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
+    "VITE_ANALYTICS_WEBSITE_ID": "9d85ad0b-0846-428f-9aa3-fa9ea1247340",
+    "VITE_APP_ID": "HhkUnjXb9psDStghgsKXFC",
+    "VITE_APP_LOGO": "",
+    "VITE_APP_TITLE": "منشئ عقود العمل – قانون العمل المصري 14 لسنة 2025",
+    "VITE_FRONTEND_FORGE_API_KEY": "fvy5HpyGLDDbXruhcxkmkD",
+    "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
+    "VITE_OAUTH_PORTAL_URL": "https://manus.im"
+  },
+  "template_id": "web-static",
+  "test_command": "pnpm test"
+}
