@@ -8,6 +8,7 @@ import { useState } from "react";
 import StampLogo from "@/components/StampLogo";
 import ContractForm from "@/components/ContractForm";
 import ContractDocument from "@/components/ContractDocument";
+import FaqSection from "@/components/FaqSection";
 import type { ContractData, ContractType } from "@/lib/contract";
 import { Button } from "@/components/ui/button";
 import { Printer, RotateCcw, FileSignature, Scale, PrinterCheck, Download, AlertTriangle } from "lucide-react";
@@ -72,6 +73,9 @@ export default function Home() {
                 <Printer size={15} /> طباعة العقد
               </Button>
             )}
+            <Button variant="ghost" size="sm" asChild className="gap-2 text-muted-foreground">
+              <a href="#faq">الأسئلة الشائعة</a>
+            </Button>
             <Button variant="ghost" size="sm" onClick={handleReset} className="gap-2 text-muted-foreground">
               <RotateCcw size={15} /> إعادة البدء
             </Button>
@@ -154,6 +158,9 @@ export default function Home() {
             <ContractForm data={data} onChange={setData} onGenerate={handleGenerate} />
           </div>
         </section>
+
+        {/* ===== الأسئلة الشائعة ===== */}
+        <FaqSection />
 
         {/* ===== المعاينة والعقد ===== */}
         {showContract && (
