@@ -210,7 +210,7 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
           <Field label="رقم العقد">
             <Input value={data.contractNumber} onChange={(e) => set({ contractNumber: e.target.value })} placeholder="اختياري — يُرقم تلقائيًا إن تركته فارغًا" dir="ltr" className="input-chancery" />
           </Field>
-          <Field label="تاريخ تحرير العقد" required>
+          <Field label="تاريخ تحرير العقد (يوم/شهر/سنة)" required hint="اختر التاريخ من المنتقي، ويُكتب في العقد بصيغة: ١٦/٨/٢٠٢٦م">
             <Input type="date" value={data.contractDate} onChange={(e) => set({ contractDate: e.target.value })} className="input-chancery" />
           </Field>
           <Field label="نوع العقد" required>
@@ -263,8 +263,7 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
                   // معالجة تجاوز أيام الشهر: إن انتقل اليوم (مثل ٣١ يناير) إلى الشهر التالي نأخر لآخر يوم بالشهر السابق
                   s.setDate(0);
                   const d = s.getDate();
-                  const monthsAr = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-                  return `${d} ${monthsAr[s.getMonth()]} ${s.getFullYear()}م`;
+                  return `${d.toLocaleString("ar-EG", { numberingSystem: "arab" })}/${(s.getMonth() + 1).toLocaleString("ar-EG", { numberingSystem: "arab" })}/${s.getFullYear().toLocaleString("ar-EG", { numberingSystem: "arab" })}م`;
                 })()}
               </div>
             </>
@@ -273,7 +272,7 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
               العقد غير محدد المدة: يستمر حتى ينهيه أحد الطرفين بالإخطار الكتابي قبل ثلاثة أشهر طبقًا للمادة (١٥٦) من القانون.
             </div>
           )}
-          <Field label="تاريخ بدء العمل" required>
+          <Field label="تاريخ بدء العمل (يوم/شهر/سنة)" required hint="يُكتب في العقد بصيغة: ١/٩/٢٠٢٦م">
             <Input type="date" value={data.work.startDate} onChange={(e) => setWork({ startDate: e.target.value })} className="input-chancery" />
           </Field>
           <Field label="فترة الاختبار (٣ أشهر كحد أقصى)">

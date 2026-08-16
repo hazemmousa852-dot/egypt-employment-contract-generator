@@ -151,7 +151,7 @@ export function dateArabicShort(dateStr: string): string {
   if (!dateStr) return "";
   const d = new Date(dateStr);
   const monthsAr = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-  return `${arabicNumeral(d.getDate())} ${monthsAr[d.getMonth()]} ${arabicNumeral(d.getFullYear())}م`;
+  return `${arabicNumeral(d.getDate())}/${arabicNumeral(d.getMonth() + 1)}/${arabicNumeral(d.getFullYear())}م`;
 }
 
 export function totalMonths(years: number, months: number): number {
