@@ -38,7 +38,7 @@ function ContractBody({ data }: { data: ContractData }) {
   const isFixed = data.type === "fixed";
   const totalM = totalMonths(data.durationYears ?? 0, data.durationMonths ?? 0);
   const endDate = data.work.startDate && totalM > 0
-    ? (() => { const s = new Date(data.work.startDate); s.setMonth(s.getMonth() + totalM); return dateArabicShort(s.toISOString().slice(0, 10)); })()
+    ? (() => { const s = new Date(data.work.startDate); s.setMonth(s.getMonth() + totalM); s.setDate(0); return dateArabicShort(s.toISOString().slice(0, 10)); })()
     : "";
 
   return (

@@ -13,6 +13,7 @@ import type { ContractData, ContractType } from "@/lib/contract";
 import { Button } from "@/components/ui/button";
 import { Printer, RotateCcw, FileSignature, Scale, PrinterCheck, Download, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { downloadContractPdf } from "@/lib/pdf";
 
 const defaultData: ContractData = {
   contractNumber: "",
@@ -37,6 +38,19 @@ export default function Home() {
     setTimeout(() => {
       document.getElementById("contract-preview")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
+  };
+
+  const handleDownloadPdf = async () => {
+    const el = document.querySelector<HTMLElement>("#contract-preview .contract-page") ||
+      document.querySelector<HTMLElement>(".contract-page");
+    if (!el) { toast.error("اضغط أولًا على زر «حرّر العقد» لتوليد المسودة"); return; }
+    try {
+      toast.info("جارٍ إعداد ملف PDF...");
+      await downloadContractPdf(el);
+      toast.success("تم تحميل ملف PDF");
+    } catch {
+      toast.error("تعذر إنشاء ملف PDF — جرّب خيار الطباعة بدلًا من ذلك");
+    }
   };
 
   const handlePrint = () => {
@@ -181,6 +195,9 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground mt-1">راجع البنود؛ فإن سلمت، اطبع العقد كاملًا بالنسخ الأربع المطلوبة قانونًا.</p>
               </div>
               <div className="flex gap-2">
+                <Button variant="outline" onClick={handleDownloadPdf} size="lg" className="gap-2 font-display text-base rounded-[3px] bg-white">
+                  <Download size={17} /> حمّل PDF
+                </Button>
                 <Button onClick={handlePrint} size="lg" className="gap-2 font-display text-base rounded-[3px]">
                   <Printer size={17} /> اطبع العقد كاملًا
                 </Button>
