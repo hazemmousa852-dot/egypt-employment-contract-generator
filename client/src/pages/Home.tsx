@@ -1,25 +1,203 @@
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { Streamdown } from 'streamdown';
-
-/**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Best Practices, Design Guide and Common Pitfalls
+/*
+ * DESIGN: "الديوان الرسمي" (Official Chancery)
+ * الصفحة الرئيسية: ترويسة بطل غير متمركزة (يمين نص + يسار صورة توضيحية)،
+ * خطوات إدخال على بطاقات بإطار مزدوج ذهبي/أحمر، معاينة A4، زر طباعة بارز.
+ * ألوان: عاجي ورقي، حبر كحلي، أحمر ختم، ذهبي عتيق. خطوط: Amiri + Cairo.
  */
+import { useState } from "react";
+import StampLogo from "@/components/StampLogo";
+import ContractForm from "@/components/ContractForm";
+import ContractDocument from "@/components/ContractDocument";
+import type { ContractData, ContractType } from "@/lib/contract";
+import { Button } from "@/components/ui/button";
+import { Printer, RotateCcw, FileSignature, Scale, PrinterCheck, Download, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+
+const defaultData: ContractData = {
+  contractNumber: "",
+  contractDate: new Date().toISOString().slice(0, 10),
+  type: "fixed" as ContractType,
+  durationYears: 1,
+  durationMonths: 0,
+  employer: { name: "", role: "صاحب العمل", nationalId: "", phone: "", address: "", email: "", commercialRegister: "" },
+  employee: { name: "", gender: "male", nationalId: "", jobTitle: "", department: "", qualification: "", phone: "", address: "" },
+  salary: { basicSalary: 0, allowances: "", paymentMethod: "cash" },
+  work: { startDate: "", trialPeriod: false, workLocation: "", workNature: "عمل دائم", dailyHours: "٨", weeklyRestDay: "يوم الجمعة", nonCompete: false },
+};
+
 export default function Home() {
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
+  const [data, setData] = useState<ContractData>(defaultData);
+  const [showContract, setShowContract] = useState(false);
+  const [showPrint, setShowPrint] = useState(false);
+
+  const handleGenerate = () => {
+    setShowContract(true);
+    setShowPrint(false);
+    setTimeout(() => {
+      document.getElementById("contract-preview")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
+
+  const handlePrint = () => {
+    setShowPrint(true);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setShowPrint(false), 800);
+    }, 300);
+  };
+
+  const handleReset = () => {
+    setData(defaultData);
+    setShowContract(false);
+    setShowPrint(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    toast.success("تم إعادة تعيين النموذج");
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
+      {/* ===== الترويسة الرسمية ===== */}
+      <header className="no-print border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-40">
+        <div className="container flex items-center justify-between py-3">
+          <div className="flex items-center gap-3">
+            <StampLogo size={44} />
+            <div>
+              <h1 className="font-display text-xl font-bold leading-tight">منشئ عقود العمل</h1>
+              <p className="text-[11px] text-muted-foreground -mt-0.5">مطابق لقانون العمل المصري رقم ١٤ لسنة ٢٠٢٥</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {showContract && (
+              <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2 font-semibold">
+                <Printer size={15} /> طباعة العقد
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" onClick={handleReset} className="gap-2 text-muted-foreground">
+              <RotateCcw size={15} /> إعادة البدء
+            </Button>
+          </div>
+        </div>
+        <div className="chancery-rule" />
+      </header>
+
+      <main className="flex-1">
+        {/* ===== البطل ===== */}
+        <section className="no-print relative overflow-hidden">
+          <div className="absolute inset-0 opacity-[0.35]" style={{
+            backgroundImage: "radial-gradient(circle at 85% 30%, oklch(0.9 0.03 85 / 0.6) 0%, transparent 50%), radial-gradient(circle at 10% 80%, oklch(0.65 0.09 75 / 0.12) 0%, transparent 45%)",
+          }} />
+          <div className="container relative py-12 md:py-16">
+            <div className="grid md:grid-cols-[1.4fr_1fr] gap-10 items-center">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-[3px] border border-[var(--gold)]/60 bg-[var(--gold)]/10 px-3 py-1 text-xs font-semibold text-[oklch(0.5_0.08_75)] mb-5">
+                  <Scale size={13} /> أداة عامة مجانية — تُتاح لأي صاحب عمل أو عامل في مصر
+                </div>
+                <h2 className="font-display text-3xl md:text-[2.7rem] leading-[1.3] font-bold mb-5">
+                  حرّر عقد عملٍ موثّقًا
+                  <span className="text-[var(--seal)]"> بحسب قانون العمل المصري الجديد</span>
+                </h2>
+                <p className="text-base text-muted-foreground leading-relaxed max-w-xl mb-6">
+                  تُبنى بنود العقد الفردي نصًا على أحكام قانون العمل الصادر بالقانون رقم (١٤) لسنة ٢٠٢٥ — من مسمّى الوظيفة ومدة العقد المحدد المدة وتاريخ نهايته المحسوب آليًا، إلى الأجر والعلاوة الدورية والإجازات ومهلة الإشعار الكتابي. حرّر بيانات الطرفين، ووثّق الشعار، واطبع العقد كاملًا في دقائق.
+                </p>
+                <div className="flex flex-wrap items-center gap-3 text-sm">
+                  <span className="flex items-center gap-1.5 text-foreground/80"><FileSignature size={15} className="text-[var(--seal)]" /> كل بندٍ مرقم بالمادة القانونية الموجبة</span>
+                  <span className="flex items-center gap-1.5 text-foreground/80"><PrinterCheck size={15} className="text-[var(--seal)]" /> نسخة A4 رسمية بنسخها الأربع</span>
+                </div>
+                <div className="mt-6 flex items-center gap-2 text-[0.72rem] text-muted-foreground">
+                  <StampLogo size={20} />
+                  <span>وثّق اتفاقك كما توثّقه دواوين القانون — بنودًا مرقمة وتاريخ نهاية محسوبًا وختمًا رسميًا.</span>
+                </div>
+              </div>
+              {/* معاينة لحظة المستند: ورقة عقد واقعية مع ختم أحمر بارز */}
+              <div className="hidden md:block relative">
+                <div className="card-chancery rounded-[3px] p-6 transform rotate-1 bg-white relative" style={{ minHeight: "340px" }}>
+                  <div className="chancery-rule" />
+                  <div className="font-display text-center text-lg font-bold mt-3">عقد عمل فردي</div>
+                  <p className="text-[0.6rem] text-center text-muted-foreground mt-0.5">مطابق لقانون العمل رقم (١٤) لسنة ٢٠٢٥</p>
+                  <div className="space-y-2 mt-4 px-1">
+                    {[
+                      { w: "96%", bold: true, t: "بين كلٍّ من السيد: .............................. وشركة: .............................." },
+                      { w: "88%", t: "اتفقا وهما بكامل أهليتهما المعتبرة شرعًا وقانونًا على ما يلي:" },
+                      { w: "82%", t: "البند (١): يعمل الطرف الثاني بوظيفة ...................." },
+                      { w: "90%", t: "البند (٢): مدة العقد ............ وينتهي بنهاية يوم ............" },
+                      { w: "84%", t: "البند (٣): الأجر الشهري ............ (....................) فقط لا غير" },
+                      { w: "70%", t: "حرّر من هذا العقد أربع نسخ معتمدة للطرفين..." },
+                    ].map((l, i) => (
+                      <div key={i} className={`text-[0.58rem] leading-relaxed text-[#1a1a2e]/70 ${l.bold ? "font-bold text-[#1a1a2e]/85" : ""}`} style={{ width: l.w }}>
+                        {l.t}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="absolute bottom-5 left-6 opacity-80 rotate-[-10deg]" aria-hidden="true">
+                    <StampLogo size={72} />
+                  </div>
+                </div>
+                <div className="absolute -top-3 -left-3 card-chancery rounded-[3px] px-3 py-1.5 text-xs font-semibold bg-[var(--seal)] text-primary-foreground rotate-[-3deg]">
+                  القانون رقم ١٤ / ٢٠٢٥
+                </div>
+                <div className="absolute -bottom-3 right-6 card-chancery rounded-[3px] px-3 py-1 text-[0.68rem] font-semibold text-[var(--seal)] rotate-[2deg]">
+                  تاريخ النهاية يُحسب تلقائيًا
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== النموذج ===== */}
+        <section className="no-print container py-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="h-[3px] flex-1 bg-gradient-to-l from-transparent via-[var(--gold)] to-[var(--seal)]" />
+            <h3 className="font-display text-2xl font-bold">بيانات العقد</h3>
+            <div className="h-[3px] flex-1 bg-gradient-to-r from-transparent via-[var(--gold)] to-[var(--seal)]" />
+          </div>
+          <div className="paper-grain relative">
+            <ContractForm data={data} onChange={setData} onGenerate={handleGenerate} />
+          </div>
+        </section>
+
+        {/* ===== المعاينة والعقد ===== */}
+        {showContract && (
+          <section id="contract-preview" className="no-print container py-8 border-t border-border">
+            <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+              <div>
+                <h3 className="font-display text-2xl font-bold">مسودة العقد</h3>
+                <p className="text-sm text-muted-foreground mt-1">راجع البنود؛ فإن سلمت، اطبع العقد كاملًا بالنسخ الأربع المطلوبة قانونًا.</p>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handlePrint} size="lg" className="gap-2 font-display text-base rounded-[3px]">
+                  <Printer size={17} /> اطبع العقد كاملًا
+                </Button>
+              </div>
+            </div>
+            <div className="rounded-[3px] overflow-hidden border border-border">
+              <ContractDocument data={data} />
+            </div>
+            <p className="mt-4 flex items-start gap-2 text-xs text-muted-foreground bg-[var(--secondary)] rounded-md p-3 border border-[var(--gold)]/30">
+              <AlertTriangle size={14} className="text-[var(--gold)] shrink-0 mt-0.5" />
+              هذا النموذج أداة مساعدة عامة لإعداد عقد عمل وفق المواد العامة لقانون العمل المصري رقم ١٤ لسنة ٢٠٢٥، ولا يُغني عن الاستشارة القانونية المتخصصة في الحالات الخاصة (العمال المنزليون، الزراعة، الشركات ذات الأحكام الخاصة، أو العقود محل نزاع قائم).
+            </p>
+          </section>
+        )}
       </main>
+
+      {/* ===== التذييل ===== */}
+      <footer className="no-print border-t border-border mt-10">
+        <div className="chancery-rule" />
+        <div className="container py-6 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <StampLogo size={26} />
+            <span>منشئ عقود العمل — مطابق لقانون العمل رقم (١٤) لسنة ٢٠٢٥</span>
+          </div>
+          <span>أداة عامة مجانية لأي صاحب عمل أو عامل في مصر</span>
+        </div>
+      </footer>
+
+      {/* ===== منطقة الطباعة (A4) ===== */}
+      {showPrint && (
+        <div className="print-only">
+          <ContractDocument data={data} forPrint />
+        </div>
+      )}
     </div>
   );
 }

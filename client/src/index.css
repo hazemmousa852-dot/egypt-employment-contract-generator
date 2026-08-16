@@ -1,3 +1,8 @@
+/*
+ * DESIGN: "الديوان الرسمي" (Official Chancery)
+ * Warm ivory paper bg, deep navy ink text, seal-red accents, antique gold trim.
+ * Fonts: Amiri (contract & display headings), Cairo (UI body). Full RTL.
+ */
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -27,6 +32,10 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-gold: var(--gold);
+  --color-ink: var(--ink);
+  --color-seal: var(--seal);
+  --color-paper: var(--paper);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -40,77 +49,53 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: "Cairo", "Tajawal", sans-serif;
+  --font-serif: "Amiri", serif;
 }
 
 :root {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-600);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --radius: 0.65rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.235 0.015 65);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.235 0.015 65);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.235 0.015 65);
-  --secondary: oklch(0.98 0.001 286.375);
-  --secondary-foreground: oklch(0.4 0.015 65);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.141 0.005 285.823);
-  --destructive: oklch(0.577 0.245 27.325);
+  --radius: 0.5rem;
+  /* Ivory paper background */
+  --background: oklch(0.97 0.008 85);
+  /* Deep navy ink */
+  --foreground: oklch(0.28 0.05 265);
+  --card: oklch(0.985 0.005 85);
+  --card-foreground: oklch(0.28 0.05 265);
+  --popover: oklch(0.985 0.005 85);
+  --popover-foreground: oklch(0.28 0.05 265);
+  /* Seal red primary */
+  --primary: oklch(0.45 0.19 25);
+  --primary-foreground: oklch(0.985 0.005 85);
+  --secondary: oklch(0.94 0.012 85);
+  --secondary-foreground: oklch(0.35 0.045 265);
+  --muted: oklch(0.935 0.01 85);
+  --muted-foreground: oklch(0.5 0.02 265);
+  --accent: oklch(0.9 0.03 85);
+  --accent-foreground: oklch(0.3 0.045 265);
+  --destructive: oklch(0.55 0.22 27);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.214 259.815);
+  --border: oklch(0.87 0.015 85);
+  --input: oklch(0.87 0.015 85);
+  --ring: oklch(0.45 0.19 25);
+  /* Chancery extras */
+  --gold: oklch(0.65 0.09 75);
+  --ink: oklch(0.28 0.05 265);
+  --seal: oklch(0.45 0.19 25);
+  --paper: oklch(0.97 0.008 85);
+  --chart-1: oklch(0.65 0.09 75);
+  --chart-2: oklch(0.45 0.19 25);
+  --chart-3: oklch(0.28 0.05 265);
+  --chart-4: oklch(0.55 0.1 265);
+  --chart-5: oklch(0.75 0.05 75);
   --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.235 0.015 65);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
-}
-
-.dark {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-500);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.85 0.005 65);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.85 0.005 65);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.85 0.005 65);
-  --secondary: oklch(0.24 0.006 286.033);
-  --secondary-foreground: oklch(0.7 0.005 65);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground:  oklch(0.92 0.005 65);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.488 0.243 264.376);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.85 0.005 65);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground:  oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.488 0.243 264.376);
+  --sidebar-foreground: oklch(0.28 0.05 265);
+  --sidebar-primary: oklch(0.45 0.19 25);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.9 0.03 85);
+  --sidebar-accent-foreground: oklch(0.3 0.045 265);
+  --sidebar-border: oklch(0.87 0.015 85);
+  --sidebar-ring: oklch(0.45 0.19 25);
+  --ease-out-chancery: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @layer base {
@@ -119,6 +104,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "Cairo", "Tajawal", sans-serif;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -134,24 +120,11 @@
 }
 
 @layer components {
-  /**
-   * Custom container utility that centers content and adds responsive padding.
-   *
-   * This overrides Tailwind's default container behavior to:
-   * - Auto-center content (mx-auto)
-   * - Add responsive horizontal padding
-   * - Set max-width for large screens
-   *
-   * Usage: <div className="container">...</div>
-   *
-   * For custom widths, use max-w-* utilities directly:
-   * <div className="max-w-6xl mx-auto px-4">...</div>
-   */
   .container {
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1rem; /* 16px - mobile padding */
+    padding-left: 1rem;
     padding-right: 1rem;
   }
 
@@ -162,16 +135,137 @@
 
   @media (min-width: 640px) {
     .container {
-      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-left: 1.5rem;
       padding-right: 1.5rem;
     }
   }
 
   @media (min-width: 1024px) {
     .container {
-      padding-left: 2rem; /* 32px - desktop padding */
+      padding-left: 2rem;
       padding-right: 2rem;
-      max-width: 1280px; /* Standard content width */
+      max-width: 1280px;
+    }
+  }
+
+  /* ===== Chancery signature elements ===== */
+
+  /* Double rule: gold + seal red, like official letterheads */
+  .chancery-rule {
+    position: relative;
+    height: 5px;
+    background: linear-gradient(to bottom, var(--gold) 0 2px, transparent 2px 3px, var(--seal) 3px 5px);
+  }
+
+  /* Official paper sheet: no floating app-card look — printed-stationery language */
+  .card-chancery {
+    background: var(--card);
+    border: 1px solid oklch(0.78 0.03 85);
+    box-shadow: none;
+    position: relative;
+  }
+
+  .card-chancery::before {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border: 1px solid oklch(0.88 0.03 85);
+    pointer-events: none;
+  }
+
+  /* Chancery input: sharp corners, fine ink rule — official form field */
+  .input-chancery {
+    border-radius: 2px;
+    border-color: oklch(0.78 0.03 85);
+    background: oklch(0.99 0.003 85);
+    font-family: "Cairo", sans-serif;
+    transition: border-color 160ms var(--ease-out-chancery);
+  }
+  .input-chancery:focus {
+    border-color: var(--seal);
+  }
+
+  /* Section title block: legal register cadence */
+  .chancery-section-title {
+    font-family: "Amiri", serif;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+  .legal-ref {
+    font-family: "Cairo", sans-serif;
+    font-size: 0.72rem;
+    color: oklch(0.5 0.16 25);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Seal medallion used as section mark */
+  .seal-medallion {
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--seal);
+    color: var(--seal);
+    background: oklch(0.97 0.02 25);
+  }
+
+  /* Fine grain over paper hero for printed feel */
+  .paper-grain::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.4;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  }
+
+  .font-display {
+    font-family: "Amiri", serif;
+  }
+
+  /* ===== Printed contract page (A4) ===== */
+  @media print {
+    body {
+      background: white !important;
+    }
+    .no-print {
+      display: none !important;
+    }
+    .print-only {
+      display: block !important;
+    }
+    @page {
+      size: A4;
+      margin: 12mm 14mm;
+    }
+  }
+
+  .print-only {
+    display: none;
+  }
+
+  .contract-page {
+    width: 210mm;
+    min-height: 297mm;
+    background: white;
+    color: #1a1a2e;
+    font-family: "Amiri", serif;
+    font-size: 13pt;
+    line-height: 2;
+    padding: 14mm 16mm;
+    box-sizing: border-box;
+  }
+
+  @media print {
+    .contract-page {
+      width: 100%;
+      min-height: auto;
+      padding: 0;
+      box-shadow: none;
+    }
+    .contract-page-break {
+      page-break-before: always;
     }
   }
 }
