@@ -5,6 +5,8 @@
 
 export type ContractType = "fixed" | "indefinite" | "task" | "training" | "consultant";
 
+export type ContractLanguage = "ar" | "en" | "both";
+
 export interface PartyData {
   name: string;
   role: string; // صاحب العمل
@@ -31,6 +33,9 @@ export interface SalaryData {
   allowances?: string; // مزايا وبدلات إضافية نصية
   paymentMethod: "cash" | "bank"; // نقدي / تحويل بنكي
   paymentDay?: string; // موعد الأداء (افتراضي: من كل شهر)
+  hasOvertime?: boolean; // احتساب الأجر الإضافي
+  overtimeDayHours?: number; // ساعات إضافية نهارية شهريًا (بمتوسط ٢٦ يوم عمل)
+  overtimeNightHours?: number; // ساعات إضافية ليلية شهريًا
 }
 
 export interface WorkData {
@@ -47,6 +52,7 @@ export interface ContractData {
   contractNumber: string; // رقم العقد
   contractDate: string; // تاريخ تحرير العقد
   type: ContractType;
+  language: ContractLanguage; // لغة العقد: عربي / إنجليزي / ثنائي
   durationYears?: number; // عدد سنوات العقد محدد المدة
   durationMonths?: number; // عدد أشهر إضافية
   taskDescription?: string; // وصف العمل المطلوب إنجازه (لعقود إنجاز عمل معين)
@@ -191,6 +197,43 @@ export function dateArabicEastern(dateStr: string): string {
 
 export function isTraining(d: ContractData): boolean {
   return d.type === "training";
+}
+
+/* ==============================================================
+   الأجر الإضافي — وفق المادة (٨٥) من قانون العمل (نهارًا ٢٥٪+
+   والليل ٧٠٪+)... الأداة تتيح النسبة المعتمدة لدى المستخدم
+   (٣٥٪ نهاري / ٧٠٪ ليلي) على أساس أجر الساعة
+   ============================================================== */
+const WORK_DAYS_PER_MONTH = 26; // متوسط أيام العمل الشهرية (الجمعة راحة)
+const HOURS_PER_DAY = 8;
+
+/** أجر الساعة على أساس ٢٦ يوم عمل × ٨ ساعات */
+export function hourlyRate(basic: number): number {
+  return basic / (WORK_DAYS_PER_MONTH * HOURS_PER_DAY);
+}
+
+/** الأجر الإضافي عن الساعة النهارية: الأساسي + ٣٥٪ */
+export function overtimeDayHourRate(basic: number): number {
+  return hourlyRate(basic) * 1.35;
+}
+
+/** الأجر الإضافي عن الساعة الليلية: الأساسي + ٧٠٪ */
+export function overtimeNightHourRate(basic: number): number {
+  return hourlyRate(basic) * 1.70;
+}
+
+/** إجمالي التعويض الشهري عن الساعات الإضافية (نهاري + ليلي) */
+export function overtimeCompensation(
+  basic: number,
+  dayHours: number,
+  nightHours: number
+): number {
+  const h = hourlyRate(basic);
+  return (dayHours ?? 0) * h * 1.35 + (nightHours ?? 0) * h * 1.70;
+}
+
+export function hasOvertime(d: ContractData): boolean {
+  return !!d.salary.hasOvertime && ((d.salary.overtimeDayHours ?? 0) > 0 || (d.salary.overtimeNightHours ?? 0) > 0);
 }
 
 export function isConsultant(d: ContractData): boolean {

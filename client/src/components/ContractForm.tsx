@@ -7,7 +7,8 @@
  * حقول بحواف حادة وخط حبر رفيع، علامات أقسام ختمية دائرية، لغة موظف قانوني.
  */
 import { useState, useRef } from "react";
-import type { ContractData, ContractType, PartyData, EmployeeData, SalaryData, WorkData } from "@/lib/contract";
+import type { ContractData, ContractType, ContractLanguage, PartyData, EmployeeData, SalaryData, WorkData } from "@/lib/contract";
+import { formatMoney, hourlyRate, overtimeCompensation, overtimeDayHourRate, overtimeNightHourRate } from "@/lib/contract";
 import { contractEndDate } from "@/lib/contract";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -219,6 +220,24 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
           <Field label="تاريخ تحرير العقد (يوم/شهر/سنة)" required hint="اختر التاريخ من المنتقي، ويُكتب في العقد بصيغة: 16/8/2026م">
             <Input type="date" value={data.contractDate} onChange={(e) => set({ contractDate: e.target.value })} className="input-chancery" />
           </Field>
+          <Field label="لغة تحرير العقد" required hint="في حالة «عربي + إنجليزي» تُنشر كل صفحة نصفين: يمين عربي ويسار إنجليزي">
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              {([
+                { v: "ar" as ContractLanguage, label: "عربي فقط" },
+                { v: "en" as ContractLanguage, label: "English Only" },
+                { v: "both" as ContractLanguage, label: "عربي + إنجليزي" },
+              ]).map((opt) => (
+                <button
+                  key={opt.v}
+                  type="button"
+                  onClick={() => set({ language: opt.v })}
+                  className={`rounded-[2px] border px-2 py-2.5 text-sm font-semibold transition-all ${data.language === opt.v ? "border-[var(--seal)] bg-[oklch(0.45_0.19_25/0.06)] text-[var(--seal)] ring-1 ring-[var(--seal)]/30" : "border-border bg-card text-muted-foreground hover:border-[var(--seal)]/40"}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </Field>
           <Field label="نوع العقد" required>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
               <button
@@ -387,6 +406,41 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
           <Field label="المزايا والبدلات الإضافية" hint="اختياري — تُذكر بنص صريح إن وجدت">
             <Input value={data.salary.allowances} onChange={(e) => setSalary({ allowances: e.target.value })} placeholder="مثال: بدل مواصلات ٥٠٠ جنيه + بدل إعاشة" className="input-chancery" />
           </Field>
+          <Field label="الأجر الإضافي (ساعات إضافية مدفوعة)" hint={data.type !== "consultant" && data.type !== "training" ? "النهارية بأجر الساعة + ٣٥٪، والليلية بأجر الساعة + ٧٠٪ — يُحسب التعويض الشهري تلقائيًا" : "لا يُطبق الأجر الإضافي على عقود التدريب والاستشاري"}>
+            {data.type !== "consultant" && data.type !== "training" ? (
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={data.salary.hasOvertime} onCheckedChange={(v) => setSalary({ hasOvertime: v === true, overtimeDayHours: v === true ? (data.salary.overtimeDayHours ?? 10) : 0, overtimeNightHours: v === true ? (data.salary.overtimeNightHours ?? 5) : 0 })} id="overtime" className="accent-[var(--seal)]" />
+                  <Label htmlFor="overtime" className="cursor-pointer font-bold">احتساب الأجر الإضافي</Label>
+                </div>
+                {data.salary.hasOvertime && data.salary.basicSalary > 0 && (
+                  <div className="rounded-md bg-[var(--secondary)] border border-[var(--gold)]/40 px-4 py-3 text-sm space-y-1">
+                    <p className="text-[0.8rem] text-muted-foreground">أجر الساعة على أساس ٢٦ يوم × ٨ ساعات: <span dir="ltr" className="font-bold text-foreground">{formatMoney(Math.round(hourlyRate(data.salary.basicSalary) * 100) / 100)}</span> جنيه</p>
+                    <p className="text-[0.8rem] text-muted-foreground">ساعة نهارية إضافية (٣٥٪+): <span dir="ltr" className="font-bold text-foreground">{formatMoney(Math.round(overtimeDayHourRate(data.salary.basicSalary) * 100) / 100)}</span> جنيه</p>
+                    <p className="text-[0.8rem] text-muted-foreground">ساعة ليلية إضافية (٧٠٪+): <span dir="ltr" className="font-bold text-foreground">{formatMoney(Math.round(overtimeNightHourRate(data.salary.basicSalary) * 100) / 100)}</span> جنيه</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-md bg-[var(--secondary)] border border-[var(--gold)]/40 px-4 py-3 text-xs text-muted-foreground pt-1">لا تسري أحكام الأجر الإضافي على عقد التدريب التجريبي أو التعاقد الاستشاري المستقل.</div>
+            )}
+          </Field>
+          {data.salary.hasOvertime && data.type !== "consultant" && data.type !== "training" && (
+            <>
+              <Field label="متوسط الساعات الإضافية النهارية شهريًا" hint="تُضرب في أجر الساعة × ١٫٣٥">
+                <Input type="number" min={0} max={300} value={data.salary.overtimeDayHours ?? ""} onChange={(e) => setSalary({ overtimeDayHours: Number(e.target.value) || 0 })} placeholder="١٠" dir="ltr" className="input-chancery text-left" />
+              </Field>
+              <Field label="متوسط الساعات الإضافية الليلية شهريًا" hint="تُضرب في أجر الساعة × ١٫٧٠">
+                <Input type="number" min={0} max={300} value={data.salary.overtimeNightHours ?? ""} onChange={(e) => setSalary({ overtimeNightHours: Number(e.target.value) || 0 })} placeholder="٥" dir="ltr" className="input-chancery text-left" />
+              </Field>
+              {(data.salary.overtimeDayHours ?? 0) > 0 || (data.salary.overtimeNightHours ?? 0) > 0 ? (
+                <div className="sm:col-span-2 rounded-md bg-[oklch(0.45_0.19_25/0.06)] border border-[var(--seal)]/30 px-4 py-3 text-sm">
+                  <span className="font-semibold text-[var(--seal)]">التعويض الشهري التقديري للأجر الإضافي: </span>
+                  <span dir="ltr" className="font-bold text-foreground">{formatMoney(Math.round(overtimeCompensation(data.salary.basicSalary, data.salary.overtimeDayHours ?? 0, data.salary.overtimeNightHours ?? 0)))}</span> جنيه
+                </div>
+              ) : null}
+            </>
+          )}
           <Field label="طريقة سداد الأجر">
             <div className="flex gap-4 pt-1.5">
               <label className="flex items-center gap-2 text-sm cursor-pointer">

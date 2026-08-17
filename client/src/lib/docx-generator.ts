@@ -22,8 +22,39 @@ import {
 } from "docx";
 import { ContractData, arabicNumeral, contractEndDate, dateArabic, dateArabicShort, durationText, numberToArabicWords } from "./contract";
 import { buildClauses } from "./clauses";
+import { buildEnClausesFor, party2LabelEn } from "./clauses-en";
 
 const FONT = "Cairo";
+const FONT_EN = "Times New Roman";
+
+/* ========================= دوال مساعدة إنجليزية ========================= */
+function fmtShort(iso: string): string {
+  const dd = new Date(iso);
+  return `${dd.getDate()}/${dd.getMonth() + 1}/${dd.getFullYear()}`;
+}
+function durationTextEn(years: number, months: number): string {
+  const parts: string[] = [];
+  if (years > 0) parts.push(`${years} year${years > 1 ? "s" : ""}`);
+  if (months > 0) parts.push(`${months} month${months > 1 ? "s" : ""}`);
+  return parts.length ? parts.join(" and ") : "one month";
+}
+function salaryWordsEn(n: number): string {
+  const units = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
+  const tens = ["", "ten", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+  function three(w: number): string {
+    const h = Math.floor(w / 100), rem = w % 100;
+    return h ? `${units[h]} hundred` + (rem ? " and " : "") + two(rem) : two(rem);
+  }
+  function two(w: number): string {
+    if (w < 20) return units[w];
+    return tens[Math.floor(w / 10)] + (w % 10 ? "-" + units[w % 10] : "");
+  }
+  const th = Math.floor(n / 1000), rem = n % 1000;
+  let out = "";
+  if (th) out += `${two(th)} thousand`;
+  if (rem) out += (out ? " " : "") + three(rem);
+  return out || "zero";
+}
 
 /* ========================= تحويل اللوجو ========================= */
 function dataUrlToArray(dataUrl?: string): Uint8Array | null {
@@ -58,6 +89,25 @@ function dateArabicEastern(date: Date | string): string {
 }
 
 /* ========================= الفقرات ========================= */
+function paraEn(text: string, align: "left" | "center" | "justify" = "justify", size = 22, firstIndent = false): Paragraph {
+  const runs: TextRun[] = [];
+  const re = /\*\*(.+?)\*\*/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) runs.push(new TextRun({ text: text.slice(last, m.index), font: FONT_EN, size, sizeComplexScript: size }));
+    runs.push(new TextRun({ text: m[1], font: FONT_EN, size, bold: true, sizeComplexScript: size }));
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) runs.push(new TextRun({ text: text.slice(last), font: FONT_EN, size, sizeComplexScript: size }));
+  return new Paragraph({
+    alignment: align === "justify" ? AlignmentType.JUSTIFIED : align === "center" ? AlignmentType.CENTER : AlignmentType.LEFT,
+    indent: firstIndent ? { firstLine: 300 } : undefined,
+    children: runs,
+    spacing: { after: 140, line: 300 },
+  });
+}
+
 function para(text: string, align: "right" | "center" | "justify" = "justify", size = 24, firstIndent = false): Paragraph {
   const runs: TextRun[] = [];
   const re = /\*\*(.+?)\*\*/g;
@@ -82,6 +132,14 @@ function empty(spacing = 180): Paragraph {
   return new Paragraph({ bidirectional: true, spacing: { after: spacing }, children: [] });
 }
 
+function clauseHeadingEn(title: string): Paragraph {
+  return new Paragraph({
+    alignment: AlignmentType.LEFT,
+    children: [new TextRun({ text: title, font: FONT_EN, size: 24, bold: true, sizeComplexScript: 24 })],
+    spacing: { before: 200, after: 100 },
+  });
+}
+
 function clauseHeading(title: string): Paragraph {
   return new Paragraph({
     alignment: AlignmentType.RIGHT,
@@ -92,28 +150,58 @@ function clauseHeading(title: string): Paragraph {
 }
 
 /* ========================= التذييل: توقيع الطرفين أسفل كل صفحة ========================= */
-function buildFooter(d: ContractData): Footer {
-  const thinBorder = { style: BorderStyle.SINGLE, size: 6, color: "1A1A2E" };
-  const makeCell = (first: string, second: string): Paragraph[] => [
+function footerCell(label: string, name: string, rtl = true): Paragraph[] {
+  const font = rtl ? FONT : FONT_EN;
+  const nameLine = rtl ? `الاسم: ${name || ".................."}` : `Name: ${name || ".................."}`;
+  const sig = rtl ? "التوقيع: .................." : "Signature: ..................";
+  return [
     new Paragraph({
-      bidirectional: true,
+      bidirectional: rtl,
       alignment: AlignmentType.CENTER,
       spacing: { after: 80 },
-      children: [new TextRun({ text: first, font: FONT, size: 22, bold: true, rightToLeft: true, sizeComplexScript: 22 })],
+      children: [new TextRun({ text: label, font, size: 22, bold: true, rightToLeft: rtl, sizeComplexScript: 22 })],
     }),
     new Paragraph({
-      bidirectional: true,
+      bidirectional: rtl,
       alignment: AlignmentType.CENTER,
       spacing: { after: 80 },
-      children: [new TextRun({ text: `الاسم: ${second || ".................."}`, font: FONT, size: 20, rightToLeft: true, sizeComplexScript: 20 })],
+      children: [new TextRun({ text: nameLine, font, size: 20, rightToLeft: rtl, sizeComplexScript: 20 })],
     }),
     new Paragraph({
-      bidirectional: true,
+      bidirectional: rtl,
       alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: "التوقيع: ..................", font: FONT, size: 20, rightToLeft: true, sizeComplexScript: 20 })],
+      children: [new TextRun({ text: sig, font, size: 20, rightToLeft: rtl, sizeComplexScript: 20 })],
     }),
   ];
+}
 
+function buildFooter(d: ContractData): Footer {
+  const thinBorder = { style: BorderStyle.SINGLE, size: 6, color: "1A1A2E" };
+  const p1Ar = d.type === "consultant" ? "الطرف الأول — الجهة المستفيدة" : "الطرف الأول — صاحب العمل";
+  const p2Ar = d.type === "training" ? "الطرف الثاني — المتدرب" : d.type === "consultant" ? "الطرف الثاني — الاستشاري" : "الطرف الثاني — العامل";
+
+  if (d.language === "en") {
+    const p1En = d.type === "consultant" ? "The First Party — the Beneficiary" : "The First Party — the Employer";
+    const p2En = `The Second Party — ${party2LabelEn(d)}`;
+    return new Footer({
+      children: [
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          margins: { top: 200, bottom: 200 },
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, borders: { top: thinBorder }, children: footerCell(p1En, d.employer.name, false) }),
+                new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, borders: { top: thinBorder }, children: footerCell(p2En, d.employee.name, false) }),
+              ],
+            }),
+          ],
+        }),
+      ],
+    });
+  }
+
+  // ar أو both: تذييل عربي (في وضع both يُعرض العمودان داخل جسم العقد؛ التذييل يبقى عربيًا أسفل كل صفحة)
   return new Footer({
     children: [
       new Table({
@@ -122,16 +210,8 @@ function buildFooter(d: ContractData): Footer {
         rows: [
           new TableRow({
             children: [
-              new TableCell({
-                width: { size: 50, type: WidthType.PERCENTAGE },
-                borders: { top: thinBorder },
-                children: makeCell(d.type === "consultant" ? "الطرف الأول — الجهة المستفيدة" : "الطرف الأول — صاحب العمل", d.employer.name),
-              }),
-              new TableCell({
-                width: { size: 50, type: WidthType.PERCENTAGE },
-                borders: { top: thinBorder },
-                children: makeCell(d.type === "training" ? "الطرف الثاني — المتدرب" : d.type === "consultant" ? "الطرف الثاني — الاستشاري" : "الطرف الثاني — العامل", d.employee.name),
-              }),
+              new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, borders: { top: thinBorder }, children: footerCell(p1Ar, d.employer.name, true) }),
+              new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, borders: { top: thinBorder }, children: footerCell(p2Ar, d.employee.name, true) }),
             ],
           }),
         ],
@@ -141,7 +221,73 @@ function buildFooter(d: ContractData): Footer {
 }
 
 /* ========================= الترويسة: اللوجو ========================= */
-function buildHeader(logoArray: Uint8Array | null, title: string, subtitle: string): Header {
+function buildHeader(logoArray: Uint8Array | null, title: string, subtitle: string, rtl = true): Header {
+  const font = rtl ? FONT : FONT_EN;
+  const logoPara = logoArray
+    ? new Paragraph({
+        bidirectional: true,
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 100 },
+        children: [
+          new ImageRun({ data: logoArray, transformation: { width: 1600, height: 960 }, type: "png" }),
+        ],
+      })
+    : null;
+
+  if (rtl) {
+    return new Header({
+      children: [
+        ...(logoPara ? [logoPara] : []),
+        new Paragraph({
+          bidirectional: true,
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 60 },
+          children: [new TextRun({ text: "بسم الله الرحمن الرحيم", font, size: 28, bold: true, rightToLeft: true, sizeComplexScript: 28 })],
+        }),
+        new Paragraph({
+          bidirectional: true,
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 60 },
+          children: [new TextRun({ text: title, font, size: 36, bold: true, rightToLeft: true, sizeComplexScript: 36 })],
+        }),
+        new Paragraph({
+          bidirectional: true,
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: subtitle, font, size: 22, rightToLeft: true, sizeComplexScript: 22 })],
+        }),
+        new Paragraph({
+          bidirectional: true,
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 120, after: 100 },
+          children: [new TextRun({ text: "─────────────────────", font, size: 18, color: "999999", rightToLeft: true, sizeComplexScript: 18 })],
+        }),
+      ],
+    });
+  }
+
+  return new Header({
+    children: [
+      ...(logoPara ? [logoPara] : []),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 60 },
+        children: [new TextRun({ text: title, font, size: 32, bold: true, sizeComplexScript: 32 })],
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [new TextRun({ text: subtitle, font, size: 22, sizeComplexScript: 22 })],
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 120, after: 100 },
+        children: [new TextRun({ text: "─────────────────────", font, size: 18, color: "999999", sizeComplexScript: 18 })],
+      }),
+    ],
+  });
+}
+
+/* ========================= ترويسة ثنائية اللغة (صف عربي + صف إنجليزي) ========================= */
+function buildHeaderBoth(logoArray: Uint8Array | null, titleAr: string, subtitleAr: string, titleEn: string, subtitleEn: string): Header {
   return new Header({
     children: [
       ...(logoArray
@@ -150,38 +296,41 @@ function buildHeader(logoArray: Uint8Array | null, title: string, subtitle: stri
               bidirectional: true,
               alignment: AlignmentType.CENTER,
               spacing: { after: 100 },
-              children: [
-                new ImageRun({
-                  data: logoArray,
-                  transformation: { width: 1600, height: 960 },
-                  type: "png",
-                }),
-              ],
+              children: [new ImageRun({ data: logoArray, transformation: { width: 1600, height: 960 }, type: "png" })],
             }),
           ]
         : []),
       new Paragraph({
         bidirectional: true,
         alignment: AlignmentType.CENTER,
-        spacing: { after: 60 },
-        children: [new TextRun({ text: "بسم الله الرحمن الرحيم", font: FONT, size: 28, bold: true, rightToLeft: true, sizeComplexScript: 28 })],
+        spacing: { after: 40 },
+        children: [new TextRun({ text: "بسم الله الرحمن الرحيم", font: FONT, size: 26, bold: true, rightToLeft: true, sizeComplexScript: 26 })],
       }),
       new Paragraph({
         bidirectional: true,
         alignment: AlignmentType.CENTER,
-        spacing: { after: 60 },
-        children: [new TextRun({ text: title, font: FONT, size: 36, bold: true, rightToLeft: true, sizeComplexScript: 36 })],
+        spacing: { after: 40 },
+        children: [
+          new TextRun({ text: titleAr, font: FONT, size: 30, bold: true, rightToLeft: true, sizeComplexScript: 30 }),
+          new TextRun({ text: "  /  " }),
+          new TextRun({ text: titleEn, font: FONT_EN, size: 26, bold: true, sizeComplexScript: 26 }),
+        ],
       }),
       new Paragraph({
         bidirectional: true,
         alignment: AlignmentType.CENTER,
-        children: [new TextRun({ text: subtitle, font: FONT, size: 22, rightToLeft: true, sizeComplexScript: 22 })],
+        spacing: { after: 40 },
+        children: [
+          new TextRun({ text: subtitleAr, font: FONT, size: 20, rightToLeft: true, sizeComplexScript: 20 }),
+          new TextRun({ text: "  /  " }),
+          new TextRun({ text: subtitleEn, font: FONT_EN, size: 18, sizeComplexScript: 18 }),
+        ],
       }),
       new Paragraph({
         bidirectional: true,
         alignment: AlignmentType.CENTER,
-        spacing: { before: 120, after: 100 },
-        children: [new TextRun({ text: "─────────────────────", font: FONT, size: 18, color: "999999", rightToLeft: true, sizeComplexScript: 18 })],
+        spacing: { before: 80, after: 80 },
+        children: [new TextRun({ text: "─────────────────────", font: FONT, size: 16, color: "999999", rightToLeft: true, sizeComplexScript: 16 })],
       }),
     ],
   });
@@ -224,6 +373,64 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
     typeText = `نوع العقد: غير محدد المدة — يبدأ: ${dateArabicEastern(d.work.startDate)}`;
   }
 
+  const docTitleEn = isTraining ? "Probationary Training Contract" : isConsultant ? "Consultancy Services Agreement" : "Individual Employment Contract";
+  const docSubtitleEn = isTraining
+    ? "Under the Egyptian Labour Law No. (14) of 2025 and the Social Insurance Law No. (148) of 2019"
+    : isConsultant
+      ? "A civil contract for the provision of independent professional services — not an employment relationship under the Labour Law"
+      : "In accordance with the Egyptian Labour Law No. (14) of 2025";
+
+  /* ========================= سطر نوع العقد (إنجليزي) ========================= */
+  let typeTextEn = "";
+  if (d.type === "fixed") {
+    typeTextEn = `Contract type: Fixed-term — Duration: ${durationTextEn(d.durationYears ?? 0, d.durationMonths ?? 0)} — Start: ${d.work.startDate ? fmtShort(d.work.startDate) : ".........."}${endDateIso ? ` — End: ${fmtShort(endDateIso)}` : ""}`;
+  } else if (d.type === "task") {
+    typeTextEn = `Contract type: Fixed-term for the accomplishment of a specific task — Start: ${d.work.startDate ? fmtShort(d.work.startDate) : ".........."}${endDateIso ? ` — End: ${fmtShort(endDateIso)}` : ""}`;
+  } else if (isTraining) {
+    typeTextEn = `Contract type: Probationary training — Duration: ${d.trainingDurationMonths ?? 3} months — Start: ${d.work.startDate ? fmtShort(d.work.startDate) : ".........."}${endDateIso ? ` — End: ${fmtShort(endDateIso)}` : ""}`;
+  } else if (isConsultant) {
+    const durationPart = (d.durationYears ?? 0) || (d.durationMonths ?? 0)
+      ? `Term: ${durationTextEn(d.durationYears ?? 0, d.durationMonths ?? 0)} — Start: ${d.work.startDate ? fmtShort(d.work.startDate) : ".........."}${endDateIso ? ` — End: ${fmtShort(endDateIso)}` : ""}`
+      : `Indefinite-term — Start: ${d.work.startDate ? fmtShort(d.work.startDate) : ".........."}`;
+    typeTextEn = `Contract type: Independent consultancy services (civil contract) — ${durationPart}`;
+  } else {
+    typeTextEn = `Contract type: Indefinite-term — Start: ${d.work.startDate ? fmtShort(d.work.startDate) : ".........."}`;
+  }
+
+  /* ========================= فقرات الأطراف (إنجليزي) ========================= */
+  const p2LabelEn = party2LabelEn(d);
+  const p1LabelEn = isConsultant ? "The Beneficiary of the Consultancy" : "The Employer";
+
+  /* ========================= التوقيعات النهائية ========================= */
+  const signaturesAr: (Paragraph | Table)[] = [
+    empty(200),
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: footerCell("الطرف الأول — " + party1Label, d.employer.name, true) }),
+            new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: footerCell("الطرف الثاني — " + party2Label, d.employee.name, true) }),
+          ],
+        }),
+      ],
+    }),
+  ];
+  const signaturesEn: (Paragraph | Table)[] = [
+    empty(200),
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: footerCell("The First Party — " + p1LabelEn, d.employer.name, false) }),
+            new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, children: footerCell("The Second Party — " + p2LabelEn, d.employee.name, false) }),
+          ],
+        }),
+      ],
+    }),
+  ];
+
   const doc = new Document({
     styles: {
       default: {
@@ -238,7 +445,7 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
         properties: {
           page: { margin: { top: 1400, right: 1200, bottom: 1800, left: 1200 } },
         } as never,
-        headers: { default: buildHeader(logoArray, docTitle, docSubtitle) },
+        headers: { default: d.language === "both" ? buildHeaderBoth(logoArray, docTitle, docSubtitle, docTitleEn, docSubtitleEn) : buildHeader(logoArray, d.language === "en" ? docTitleEn : docTitle, d.language === "en" ? docSubtitleEn : docSubtitle, d.language !== "en") },
         footers: { default: buildFooter(d) },
         children: [
           para(`الطرف الأول: ${party1Label}`, "right", 24, true),
@@ -269,7 +476,7 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
           empty(100),
           para(typeText, "right", 24, true),
 
-          ...(d.salary.basicSalary
+                    ...(d.salary.basicSalary
             ? [
                 empty(100),
                 para(isConsultant ? "الأتعاب الشهرية" : "الأجر الشهري", "right", 24, true),
@@ -281,27 +488,72 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
                 ),
               ]
             : []),
-
+          ...(d.salary.hasOvertime && d.salary.basicSalary
+            ? [
+                empty(100),
+                para("الأجر الإضافي", "right", 24, true),
+                para(
+                  `ساعة العمل النهارية الإضافية بأجر ساعتها مضافًا إليها نسبة (35%)، والساعة الليلية بأجر ساعتها مضافًا إليها نسبة (70%)، وذلك عن ${arabicNumeral((d.salary.overtimeDayHours ?? 0) + (d.salary.overtimeNightHours ?? 0))} ساعة إضافية شهريةًا تقديرًيا`,
+                  "right",
+                  24,
+                  true,
+                ),
+              ]
+            : []),
           new Paragraph({ children: [new PageBreak()] }),
-
-          ...clauses.map((c) => {
-            let txt = c.text
-              .replace(/\*\*(.+?)\*\*/g, "$1")
-              .replace(/<span[^>]*>/g, "")
-              .replace(/<\/span>/g, "");
-            txt = txt.replace(/\d+\s*\/\s*\d+\s*\/\s*\d+م?/g, (m) => {
-              const parts = m.replace("م", "").split(/\s*\/\s*/);
-              return arabicNumeral(`${parts[0]}/${parts[1]}/${parts[2]}م`);
-            });
-            return [
-              clauseHeading(`البند (${arabicNumeral(c.number)}): ${c.title}`),
-              para(txt),
-              ...(c.breakAfter ? [new Paragraph({ children: [new PageBreak()] })] : []),
-            ];
-          }).flat(),
-
+          ...(d.language === "both"
+            ? clauses.map((c) => {
+                const en = buildEnClausesFor(d).find((e) => e.number === c.number);
+                let txt = c.text.replace(/\*\*(.+?)\*\*/g, "$1").replace(/<span[^>]*>/g, "").replace(/<\/span>/g, "");
+                txt = txt.replace(/\d+\s*\/\s*\d+\s*\/\s*\d+م?/g, (m) => {
+                  const parts = m.replace("م", "").split(/\s*\/\s*/);
+                  return arabicNumeral(`${parts[0]}/${parts[1]}/${parts[2]}م`);
+                });
+                const txtEn = en ? en.text.replace(/\*\*(.+?)\*\*/g, "$1").replace(/<span[^>]*>/g, "").replace(/<\/span>/g, "") : "";
+                return [
+                  new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: [new TextRun({ text: `البند (${arabicNumeral(c.number)}) — Clause (${c.number})`, font: FONT, size: 26, bold: true, rightToLeft: true, sizeComplexScript: 26 })],
+                    spacing: { before: 240, after: 120 },
+                  }),
+                  new Table({
+                    width: { size: 100, type: WidthType.PERCENTAGE },
+                    rows: [
+                      new TableRow({
+                        children: [
+                          new TableCell({
+                            width: { size: 50, type: WidthType.PERCENTAGE },
+                            margins: { top: 60, bottom: 60 },
+                            children: [para(txt, "justify", 20)],
+                          }),
+                          new TableCell({
+                            width: { size: 50, type: WidthType.PERCENTAGE },
+                            margins: { top: 60, bottom: 60 },
+                            children: [paraEn(txtEn, "justify", 20)],
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  ...(c.breakAfter ? [new Paragraph({ children: [new PageBreak()] })] : []),
+                ];
+              }).flat()
+            : clauses.map((c) => {
+                let txt = c.text
+                  .replace(/\*\*(.+?)\*\*/g, "$1")
+                  .replace(/<span[^>]*>/g, "")
+                  .replace(/<\/span>/g, "");
+                txt = txt.replace(/\d+\s*\/\s*\d+\s*\/\s*\d+م?/g, (m) => {
+                  const parts = m.replace("م", "").split(/\s*\/\s*/);
+                  return arabicNumeral(`${parts[0]}/${parts[1]}/${parts[2]}م`);
+                });
+                return [
+                  clauseHeading(`البند (${arabicNumeral(c.number)}): ${c.title}`),
+                  para(txt),
+                  ...(c.breakAfter ? [new Paragraph({ children: [new PageBreak()] })] : []),
+                ];
+              }).flat()),
           new Paragraph({ children: [new PageBreak()] }),
-
           para(
             `حُرر هذا العقد في تاريخ ${d.contractDate ? dateArabic(d.contractDate) : ".........."}، من أربع نسخ أصلية، استلم كل من الطرفين نسخة، وأُودعت نسخة بمكتب التأمينات الاجتماعية المختصة، ونسخة بالجهة الإدارية المختصة.`,
             "justify",
@@ -309,6 +561,7 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
             true,
           ),
           empty(300),
+          ...signaturesAr,
         ],
       },
     ],

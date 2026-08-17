@@ -24,6 +24,7 @@ const defaultData: ContractData = {
   contractNumber: "",
   contractDate: new Date().toISOString().slice(0, 10),
   type: "fixed" as ContractType,
+  language: "ar",
   durationYears: 1,
   durationMonths: 0,
   taskDescription: "",
@@ -73,11 +74,12 @@ export default function Home() {
           contractNumber: "",
           contractDate: "",
           type: "fixed",
+          language: "ar",
           taskDescription: "",
-          employer: data.employer,
-          employee: { name: "", gender: "male", nationalId: "", jobTitle: "", department: "", qualification: "", phone: "", address: "" },
           salary: { basicSalary: 0, paymentMethod: "cash" },
           work: { startDate: "", trialPeriod: false, workLocation: data.work.workLocation, workNature: data.work.workNature, dailyHours: data.work.dailyHours, weeklyRestDay: data.work.weeklyRestDay, nonCompete: false },
+          employer: data.employer,
+          employee: { name: "", gender: "male", nationalId: "", jobTitle: "", department: "", qualification: "", phone: "", address: "" },
         };
         localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(toSave));
         localStorage.setItem(`${COMPANY_STORAGE_KEY}:optin`, "1");

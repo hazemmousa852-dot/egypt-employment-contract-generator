@@ -245,6 +245,17 @@
     display: none;
   }
 
+  /* وضع ثنائي اللغة: نصف عربي / نصف إنجليزي */
+  .contract-page-both {
+    font-size: 11pt;
+    line-height: 1.7;
+  }
+  .contract-page-both [dir="rtl"] {
+    font-family: "Amiri", serif;
+  }
+  .contract-page-both [dir="ltr"] {
+    font-family: "Times New Roman", serif;
+  }
   .contract-page {
     width: 210mm;
     min-height: 297mm;
