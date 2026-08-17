@@ -28,6 +28,8 @@ const emptyEmployee: EmployeeData = { name: "", gender: "male", nationalId: "", 
 const emptySalary: SalaryData = { basicSalary: 0, allowances: "", paymentMethod: "cash" };
 const emptyWork: WorkData = { startDate: "", trialPeriod: false, workLocation: "", workNature: "عمل دائم", dailyHours: "٨", weeklyRestDay: "يوم الجمعة", nonCompete: false };
 
+const newTypeFields = { trainingDurationMonths: 3, consultantScope: "", consultantRegime: "" };
+
 function SealBadge({ icon, number }: { icon: React.ReactNode; number: string }) {
   /* شارة ختمية دائرية — لغة الدمغة بدل الأيقونة المربعة */
   return (
@@ -117,6 +119,8 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
     if (!data.work.startDate) missing.push("تاريخ بدء العقد");
     if ((data.type === "fixed" || data.type === "task") && (data.durationYears ?? 0) === 0 && (data.durationMonths ?? 0) === 0) missing.push("مدة العقد محدد المدة");
     if (data.type === "task" && !(data.taskDescription ?? "").trim()) missing.push("وصف العمل المطلوب إنجازه");
+    if (data.type === "training" && !(data.trainingDurationMonths ?? 0)) missing.push("مدة التدريب بالأشهر");
+    if (data.type === "consultant" && !(data.consultantScope ?? "").trim()) missing.push("نطاق الاستشارات والخدمات");
     if (missing.length) {
       toast.error("يُرجى استكمال الحقول التالية:\n• " + missing.join("\n• "), { duration: 6000 });
       return false;
@@ -216,7 +220,7 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
             <Input type="date" value={data.contractDate} onChange={(e) => set({ contractDate: e.target.value })} className="input-chancery" />
           </Field>
           <Field label="نوع العقد" required>
-            <div className="grid grid-cols-3 gap-2 pt-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => set({ type: "fixed" as ContractType })}
@@ -237,6 +241,20 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
                 className={`rounded-[2px] border px-2 py-2.5 text-sm font-semibold transition-all ${data.type === "indefinite" ? "border-[var(--seal)] bg-[oklch(0.45_0.19_25/0.06)] text-[var(--seal)] ring-1 ring-[var(--seal)]/30" : "border-border bg-card text-muted-foreground hover:border-[var(--seal)]/40"}`}
               >
                 غير محدد المدة
+              </button>
+              <button
+                type="button"
+                onClick={() => set({ type: "training" as ContractType, ...newTypeFields })}
+                className={`rounded-[2px] border px-2 py-2.5 text-sm font-semibold transition-all ${data.type === "training" ? "border-[var(--seal)] bg-[oklch(0.45_0.19_25/0.06)] text-[var(--seal)] ring-1 ring-[var(--seal)]/30" : "border-border bg-card text-muted-foreground hover:border-[var(--seal)]/40"}`}
+              >
+                تدريب تجريبي
+              </button>
+              <button
+                type="button"
+                onClick={() => set({ type: "consultant" as ContractType, ...newTypeFields })}
+                className={`rounded-[2px] border px-2 py-2.5 text-sm font-semibold transition-all ${data.type === "consultant" ? "border-[var(--seal)] bg-[oklch(0.45_0.19_25/0.06)] text-[var(--seal)] ring-1 ring-[var(--seal)]/30" : "border-border bg-card text-muted-foreground hover:border-[var(--seal)]/40"}`}
+              >
+                تعاقد مع استشاري
               </button>
             </div>
           </Field>
@@ -277,6 +295,63 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
                 </Field>
               )}
             </>
+          ) : data.type === "training" ? (
+            <>
+              <Field label="مدة التدريب بالأشهر" required hint="شهر واحد إلى ١٢ شهرًا كحد أقصى عادةً">
+                <Input
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={data.trainingDurationMonths ?? 3}
+                  onChange={(e) => set({ trainingDurationMonths: Math.max(1, Math.min(12, Number(e.target.value) || 1)) })}
+                  className="input-chancery"
+                />
+              </Field>
+              <div className="sm:col-span-2 rounded-md bg-[var(--secondary)] border border-[var(--gold)]/40 px-4 py-3 text-sm">
+                <span className="font-semibold text-[var(--seal)]">تاريخ نهاية التدريب المحسوب: </span>
+                {(() => {
+                  const end = contractEndDate(data.work.startDate, 0, data.trainingDurationMonths ?? 3);
+                  if (!data.work.startDate) return "أدخل تاريخ بدء التدريب لحساب تاريخ النهاية تلقائيًا";
+                  if (!end) return "يُحسب تاريخ النهاية تلقائيًا";
+                  return `${end.getDate()}/${end.getMonth() + 1}/${end.getFullYear()}م`;
+                })()}
+              </div>
+              <div className="sm:col-span-2 rounded-md bg-[var(--secondary)] border border-[var(--gold)]/40 px-4 py-3 text-sm text-muted-foreground">
+                عقد التدريب التجريبي سندٌ لاكتساب الخبرة العملية ولا يُعد عقد عمل دائم، ولا يستحق المتدرب به مزايا عمال المنشأة، ويُؤمَّن عليه ضد إصابات العمل وأمراض المهنة، ويُمنح شهادة تدريب عند انتهائه بنجاح.
+              </div>
+            </>
+          ) : data.type === "consultant" ? (
+            <>
+              <Field label="نطاق الاستشارات والخدمات" required>
+                <Input value={data.consultantScope ?? ""} onChange={(e) => set({ consultantScope: e.target.value })} placeholder="مثال: إعداد دراسات الجدوى المالية وتقييم المخاطر التشغيلية للمشروع" className="input-chancery" />
+              </Field>
+              <Field label="مدة التعاقد (اختياري)">
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={data.durationYears ?? 0}
+                    onChange={(e) => set({ durationYears: Math.max(0, Number(e.target.value) || 0) })}
+                    className="input-chancery"
+                  />
+                  <span className="text-sm text-foreground/70 shrink-0">سنة /</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={11}
+                    value={data.durationMonths ?? 0}
+                    onChange={(e) => set({ durationMonths: Math.max(0, Math.min(11, Number(e.target.value) || 0)) })}
+                    className="input-chancery"
+                  />
+                  <span className="text-sm text-foreground/70 shrink-0">شهر</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">اترك السنة والشهر صفرًا لعقد غير محدد المدة</p>
+              </Field>
+              <div className="sm:col-span-2 rounded-md bg-[var(--secondary)] border border-[var(--gold)]/40 px-4 py-3 text-sm text-muted-foreground">
+                التعاقد مع الاستشاري تعاقدٌ مدني على تقديم خدمات مهنية مستقلة، ولا يُعد علاقة عمل بالمعنى الوارد بقانون العمل، ولا يستحق به الاستشاري مزايا العمال من علاوات وإجازات، ويُقر الطرف الثاني باستقلاليته الفنية الكاملة.
+              </div>
+            </>
           ) : (
             <div className="sm:col-span-2 rounded-md bg-[var(--secondary)] border border-[var(--gold)]/40 px-4 py-3 text-sm text-muted-foreground">
               العقد غير محدد المدة: يستمر حتى ينهيه أحد الطرفين بالإخطار الكتابي قبل ثلاثة أشهر طبقًا للمادة (١٥٦) من القانون.
@@ -285,18 +360,20 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
           <Field label="تاريخ بدء العمل (يوم/شهر/سنة)" required hint="يُكتب في العقد بصيغة: 1/9/2026م">
             <Input type="date" value={data.work.startDate} onChange={(e) => setWork({ startDate: e.target.value })} className="input-chancery" />
           </Field>
-          <Field label="فترة الاختبار (٣ أشهر كحد أقصى)">
-            <div className="flex items-center gap-2 pt-2">
-              <Checkbox checked={data.work.trialPeriod} onCheckedChange={(v) => setWork({ trialPeriod: v === true })} id="trial" className="accent-[var(--seal)]" />
-              <Label htmlFor="trial" className="cursor-pointer">نعم، يُحدد للعامل فترة اختبار</Label>
-            </div>
-          </Field>
+          {data.type !== "training" && data.type !== "consultant" && (
+            <Field label="فترة الاختبار (٣ أشهر كحد أقصى)">
+              <div className="flex items-center gap-2 pt-2">
+                <Checkbox checked={data.work.trialPeriod} onCheckedChange={(v) => setWork({ trialPeriod: v === true })} id="trial" className="accent-[var(--seal)]" />
+                <Label htmlFor="trial" className="cursor-pointer">نعم، يُحدد للعامل فترة اختبار</Label>
+              </div>
+            </Field>
+          )}
         </div>
       </SectionCard>
 
       <SectionCard icon={<Wallet size={18} />} title="الأجر والعمل" index={3}>
         <div className={grid2}>
-          <Field label="الأجر الأساسي الشهري (جنيه مصري)" required hint="يُكتب بالعربية والأرقام تلقائيًا في العقد">
+          <Field label={data.type === "consultant" ? "الأتعاب الشهرية (جنيه مصري)" : "الأجر الأساسي الشهري (جنيه مصري)"} required hint="يُكتب بالعربية والأرقام تلقائيًا في العقد">
             <Input
               type="number"
               min={0}
@@ -323,21 +400,29 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
           <Field label="مكان العمل">
             <Input value={data.work.workLocation} onChange={(e) => setWork({ workLocation: e.target.value })} placeholder="مثال: الفرع الرئيسي — مدينة نصر" className="input-chancery" />
           </Field>
-          <Field label="طبيعة العمل">
-            <Input value={data.work.workNature} onChange={(e) => setWork({ workNature: e.target.value })} placeholder="مثال: عمل دائم / موسمي" className="input-chancery" />
-          </Field>
-          <Field label="ساعات العمل الفعلية اليومية" hint="الحد الأقصى القانوني ٨ ساعات فعلية يوميًا">
-            <Input value={data.work.dailyHours} onChange={(e) => setWork({ dailyHours: e.target.value })} placeholder="٨" className="input-chancery" />
-          </Field>
-          <Field label="يوم الراحة الأسبوعية">
-            <Input value={data.work.weeklyRestDay} onChange={(e) => setWork({ weeklyRestDay: e.target.value })} placeholder="يوم الجمعة" className="input-chancery" />
-          </Field>
-          <Field label="شرط عدم المنافسة">
-            <div className="flex items-center gap-2 pt-2">
-              <Checkbox checked={data.work.nonCompete} onCheckedChange={(v) => setWork({ nonCompete: v === true })} id="noncompete" className="accent-[var(--seal)]" />
-              <Label htmlFor="noncompete" className="cursor-pointer">نعم، يُتفق على عدم المنافسة (سنة كحد أقصى)</Label>
-            </div>
-          </Field>
+          {data.type !== "consultant" && data.type !== "training" && (
+            <Field label="طبيعة العمل">
+              <Input value={data.work.workNature} onChange={(e) => setWork({ workNature: e.target.value })} placeholder="مثال: عمل دائم / موسمي" className="input-chancery" />
+            </Field>
+          )}
+          {data.type !== "consultant" && (
+            <Field label="ساعات العمل الفعلية اليومية" hint="الحد الأقصى القانوني ٨ ساعات فعلية يوميًا">
+              <Input value={data.work.dailyHours} onChange={(e) => setWork({ dailyHours: e.target.value })} placeholder="٨" className="input-chancery" />
+            </Field>
+          )}
+          {data.type !== "consultant" && (
+            <Field label="يوم الراحة الأسبوعية">
+              <Input value={data.work.weeklyRestDay} onChange={(e) => setWork({ weeklyRestDay: e.target.value })} placeholder="يوم الجمعة" className="input-chancery" />
+            </Field>
+          )}
+          {data.type !== "consultant" && data.type !== "training" && (
+            <Field label="شرط عدم المنافسة">
+              <div className="flex items-center gap-2 pt-2">
+                <Checkbox checked={data.work.nonCompete} onCheckedChange={(v) => setWork({ nonCompete: v === true })} id="noncompete" className="accent-[var(--seal)]" />
+                <Label htmlFor="noncompete" className="cursor-pointer">نعم، يُتفق على عدم المنافسة (سنة كحد أقصى)</Label>
+              </div>
+            </Field>
+          )}
         </div>
       </SectionCard>
 

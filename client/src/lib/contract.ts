@@ -3,7 +3,7 @@
  * بيانات العقد ومولد النصوص القانونية المطابقة لقانون العمل المصري 14 لسنة 2025.
  */
 
-export type ContractType = "fixed" | "indefinite" | "task";
+export type ContractType = "fixed" | "indefinite" | "task" | "training" | "consultant";
 
 export interface PartyData {
   name: string;
@@ -50,6 +50,9 @@ export interface ContractData {
   durationYears?: number; // عدد سنوات العقد محدد المدة
   durationMonths?: number; // عدد أشهر إضافية
   taskDescription?: string; // وصف العمل المطلوب إنجازه (لعقود إنجاز عمل معين)
+  trainingDurationMonths?: number; // مدة التدريب بالأشهر (لعقد التدريب التجريبي)
+  consultantScope?: string; // نطاق الاستشارات والخدمات (لعقد الاستشاري)
+  consultantRegime?: string; // طبيعة التعاقد مع الاستشاري: إشراف دوري / تنفيذ مشروع / دراسة تقريرية
   employer: PartyData;
   employee: EmployeeData;
   salary: SalaryData;
@@ -184,6 +187,25 @@ export function dateArabicEastern(dateStr: string): string {
   if (!dateStr) return "..........";
   const d = new Date(dateStr);
   return arabicNumeral(`${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}م`);
+}
+
+export function isTraining(d: ContractData): boolean {
+  return d.type === "training";
+}
+
+export function isConsultant(d: ContractData): boolean {
+  return d.type === "consultant";
+}
+
+export function trainingDurationText(months: number): string {
+  if (months <= 0) return "..........";
+  if (months === 1) return "شهر واحد";
+  if (months === 2) return "شهرين";
+  if (months <= 10) return `${arabicNumeral(months)} أشهر`;
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  const yText = y === 1 ? "سنة" : y === 2 ? "سنتين" : `${arabicNumeral(y)} سنوات`;
+  return m > 0 ? `${yText} و${arabicNumeral(m)} أشهر` : yText;
 }
 
 /** تحويل HTML التاريخ (span LTR) إلى نص عربي شرقي نظيف لملف Word */
