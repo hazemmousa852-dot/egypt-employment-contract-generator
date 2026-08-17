@@ -62,7 +62,9 @@ export function arabicNumeral(n: number | string): string {
 }
 
 export function formatMoney(n: number): string {
-  return new Intl.NumberFormat("ar-EG").format(n);
+  // أرقام لاتينية بفواصل «50,000» لضمان قراءة صحيحة في العرض والطباعة وPDF وWord
+  // (الأرقام العربية-الهندية مع فاصلة عربية «٥٠٬٠٠٠» كانت تنعكس أو تُفقَد في html2canvas والطباعة)
+  return new Intl.NumberFormat("en-US").format(n);
 }
 
 /** تحويل رقم إلى صيغة نصية عربية مبسطة للجنيهات */
@@ -149,10 +151,10 @@ export function dateArabic(dateStr: string): string {
 }
 
 export function dateArabicShort(dateStr: string): string {
+  // التاريخ بأرقام لاتينية «16/8/2027م» لقرارة يوم/شهر/سنة دون انعكاس في النصوص RTL
   if (!dateStr) return "";
   const d = new Date(dateStr);
-  const monthsAr = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-  return `${arabicNumeral(d.getDate())}/${arabicNumeral(d.getMonth() + 1)}/${arabicNumeral(d.getFullYear())}م`;
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}م`;
 }
 
 /** صيغة HTML للتاريخ يوم/شهر/سنة تُلف في span LTR منعًا لانعكاس الترتيب داخل نص RTL */

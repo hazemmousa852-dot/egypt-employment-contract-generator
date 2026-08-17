@@ -108,7 +108,7 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
                 new Paragraph({ spacing: { after: 100 }, children: [] }),
                 mixedParagraph("الأجر الشهري", "right", 24, true),
                 mixedParagraph(
-                  `${d.salary.basicSalary.toLocaleString("ar-EG")} جنيه شهريًا`,
+                  `${new Intl.NumberFormat("en-US").format(d.salary.basicSalary)} جنيه شهريًا`,
                   "right",
                   24,
                   true,

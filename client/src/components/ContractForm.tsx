@@ -212,7 +212,7 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
           <Field label="رقم العقد">
             <Input value={data.contractNumber} onChange={(e) => set({ contractNumber: e.target.value })} placeholder="اختياري — يُرقم تلقائيًا إن تركته فارغًا" dir="ltr" className="input-chancery" />
           </Field>
-          <Field label="تاريخ تحرير العقد (يوم/شهر/سنة)" required hint="اختر التاريخ من المنتقي، ويُكتب في العقد بصيغة: ١٦/٨/٢٠٢٦م">
+          <Field label="تاريخ تحرير العقد (يوم/شهر/سنة)" required hint="اختر التاريخ من المنتقي، ويُكتب في العقد بصيغة: 16/8/2026م">
             <Input type="date" value={data.contractDate} onChange={(e) => set({ contractDate: e.target.value })} className="input-chancery" />
           </Field>
           <Field label="نوع العقد" required>
@@ -268,8 +268,7 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
                   const end = contractEndDate(data.work.startDate, data.durationYears ?? 0, data.durationMonths ?? 0);
                   if (!data.work.startDate || ((data.durationYears ?? 0) === 0 && (data.durationMonths ?? 0) === 0)) return "أدخل تاريخ بدء العقد والمدة لحساب تاريخ النهاية تلقائيًا";
                   if (!end) return "يُحسب تاريخ النهاية تلقائيًا";
-                  const d = end.getDate();
-                  return `${d.toLocaleString("ar-EG", { numberingSystem: "arab" })}/${(end.getMonth() + 1).toLocaleString("ar-EG", { numberingSystem: "arab" })}/${end.getFullYear().toLocaleString("ar-EG", { numberingSystem: "arab" })}م`;
+                  return `${end.getDate()}/${end.getMonth() + 1}/${end.getFullYear()}م`;
                 })()}
               </div>
               {data.type === "task" && (
@@ -283,7 +282,7 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
               العقد غير محدد المدة: يستمر حتى ينهيه أحد الطرفين بالإخطار الكتابي قبل ثلاثة أشهر طبقًا للمادة (١٥٦) من القانون.
             </div>
           )}
-          <Field label="تاريخ بدء العمل (يوم/شهر/سنة)" required hint="يُكتب في العقد بصيغة: ١/٩/٢٠٢٦م">
+          <Field label="تاريخ بدء العمل (يوم/شهر/سنة)" required hint="يُكتب في العقد بصيغة: 1/9/2026م">
             <Input type="date" value={data.work.startDate} onChange={(e) => setWork({ startDate: e.target.value })} className="input-chancery" />
           </Field>
           <Field label="فترة الاختبار (٣ أشهر كحد أقصى)">
