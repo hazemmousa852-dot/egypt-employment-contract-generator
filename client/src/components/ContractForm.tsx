@@ -8,6 +8,7 @@
  */
 import { useState, useRef } from "react";
 import type { ContractData, ContractType, PartyData, EmployeeData, SalaryData, WorkData } from "@/lib/contract";
+import { contractEndDate } from "@/lib/contract";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -114,7 +115,8 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
     if (!data.employee.jobTitle.trim()) missing.push("المسمى الوظيفي");
     if (!data.salary.basicSalary || data.salary.basicSalary <= 0) missing.push("الأجر الأساسي الشهري");
     if (!data.work.startDate) missing.push("تاريخ بدء العقد");
-    if (data.type === "fixed" && (data.durationYears ?? 0) === 0 && (data.durationMonths ?? 0) === 0) missing.push("مدة العقد محدد المدة");
+    if ((data.type === "fixed" || data.type === "task") && (data.durationYears ?? 0) === 0 && (data.durationMonths ?? 0) === 0) missing.push("مدة العقد محدد المدة");
+    if (data.type === "task" && !(data.taskDescription ?? "").trim()) missing.push("وصف العمل المطلوب إنجازه");
     if (missing.length) {
       toast.error("يُرجى استكمال الحقول التالية:\n• " + missing.join("\n• "), { duration: 6000 });
       return false;
@@ -214,24 +216,31 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
             <Input type="date" value={data.contractDate} onChange={(e) => set({ contractDate: e.target.value })} className="input-chancery" />
           </Field>
           <Field label="نوع العقد" required>
-            <div className="grid grid-cols-2 gap-3 pt-1">
+            <div className="grid grid-cols-3 gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => set({ type: "fixed" as ContractType })}
-                className={`rounded-[2px] border px-3 py-2.5 text-sm font-semibold transition-all ${data.type === "fixed" ? "border-[var(--seal)] bg-[oklch(0.45_0.19_25/0.06)] text-[var(--seal)] ring-1 ring-[var(--seal)]/30" : "border-border bg-card text-muted-foreground hover:border-[var(--seal)]/40"}`}
+                className={`rounded-[2px] border px-2 py-2.5 text-sm font-semibold transition-all ${data.type === "fixed" ? "border-[var(--seal)] bg-[oklch(0.45_0.19_25/0.06)] text-[var(--seal)] ring-1 ring-[var(--seal)]/30" : "border-border bg-card text-muted-foreground hover:border-[var(--seal)]/40"}`}
               >
                 محدد المدة
               </button>
               <button
                 type="button"
+                onClick={() => set({ type: "task" as ContractType })}
+                className={`rounded-[2px] border px-2 py-2.5 text-sm font-semibold transition-all ${data.type === "task" ? "border-[var(--seal)] bg-[oklch(0.45_0.19_25/0.06)] text-[var(--seal)] ring-1 ring-[var(--seal)]/30" : "border-border bg-card text-muted-foreground hover:border-[var(--seal)]/40"}`}
+              >
+                لإنجاز عمل معين
+              </button>
+              <button
+                type="button"
                 onClick={() => set({ type: "indefinite" as ContractType })}
-                className={`rounded-[2px] border px-3 py-2.5 text-sm font-semibold transition-all ${data.type === "indefinite" ? "border-[var(--seal)] bg-[oklch(0.45_0.19_25/0.06)] text-[var(--seal)] ring-1 ring-[var(--seal)]/30" : "border-border bg-card text-muted-foreground hover:border-[var(--seal)]/40"}`}
+                className={`rounded-[2px] border px-2 py-2.5 text-sm font-semibold transition-all ${data.type === "indefinite" ? "border-[var(--seal)] bg-[oklch(0.45_0.19_25/0.06)] text-[var(--seal)] ring-1 ring-[var(--seal)]/30" : "border-border bg-card text-muted-foreground hover:border-[var(--seal)]/40"}`}
               >
                 غير محدد المدة
               </button>
             </div>
           </Field>
-          {data.type === "fixed" ? (
+          {(data.type === "fixed" || data.type === "task") ? (
             <>
               <Field label="مدة العقد بالسنوات" hint="يمكن تركها صفرًا إذا كانت المدة بالأشهر فقط">
                 <Input
@@ -256,16 +265,18 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
               <div className="sm:col-span-2 rounded-md bg-[var(--secondary)] border border-[var(--gold)]/40 px-4 py-3 text-sm">
                 <span className="font-semibold text-[var(--seal)]">تاريخ نهاية العقد المحسوب: </span>
                 {(() => {
-                  const totalM = (data.durationYears ?? 0) * 12 + (data.durationMonths ?? 0);
-                  if (!data.work.startDate || totalM === 0) return "أدخل تاريخ بدء العقد والمدة لحساب تاريخ النهاية تلقائيًا";
-                  const s = new Date(data.work.startDate);
-                  s.setMonth(s.getMonth() + totalM);
-                  // معالجة تجاوز أيام الشهر: إن انتقل اليوم (مثل ٣١ يناير) إلى الشهر التالي نأخر لآخر يوم بالشهر السابق
-                  s.setDate(0);
-                  const d = s.getDate();
-                  return `${d.toLocaleString("ar-EG", { numberingSystem: "arab" })}/${(s.getMonth() + 1).toLocaleString("ar-EG", { numberingSystem: "arab" })}/${s.getFullYear().toLocaleString("ar-EG", { numberingSystem: "arab" })}م`;
+                  const end = contractEndDate(data.work.startDate, data.durationYears ?? 0, data.durationMonths ?? 0);
+                  if (!data.work.startDate || ((data.durationYears ?? 0) === 0 && (data.durationMonths ?? 0) === 0)) return "أدخل تاريخ بدء العقد والمدة لحساب تاريخ النهاية تلقائيًا";
+                  if (!end) return "يُحسب تاريخ النهاية تلقائيًا";
+                  const d = end.getDate();
+                  return `${d.toLocaleString("ar-EG", { numberingSystem: "arab" })}/${(end.getMonth() + 1).toLocaleString("ar-EG", { numberingSystem: "arab" })}/${end.getFullYear().toLocaleString("ar-EG", { numberingSystem: "arab" })}م`;
                 })()}
               </div>
+              {data.type === "task" && (
+                <Field label="وصف العمل المطلوب إنجازه" required>
+                  <Input value={data.taskDescription ?? ""} onChange={(e) => set({ taskDescription: e.target.value })} placeholder="مثال: بناء سور محيط بموقع العمل بطول ١٢٠ مترًا" className="input-chancery" />
+                </Field>
+              )}
             </>
           ) : (
             <div className="sm:col-span-2 rounded-md bg-[var(--secondary)] border border-[var(--gold)]/40 px-4 py-3 text-sm text-muted-foreground">

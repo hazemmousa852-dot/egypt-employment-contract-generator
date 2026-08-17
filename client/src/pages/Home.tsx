@@ -21,6 +21,7 @@ const defaultData: ContractData = {
   type: "fixed" as ContractType,
   durationYears: 1,
   durationMonths: 0,
+  taskDescription: "",
   employer: { name: "", role: "صاحب العمل", nationalId: "", phone: "", address: "", email: "", commercialRegister: "" },
   employee: { name: "", gender: "male", nationalId: "", jobTitle: "", department: "", qualification: "", phone: "", address: "" },
   salary: { basicSalary: 0, allowances: "", paymentMethod: "cash" },

@@ -267,5 +267,23 @@
     .contract-page-break {
       page-break-before: always;
     }
+    /* تكرار توقيعات الطرفين أسفل كل صفحة مطبوعة */
+    .contract-page {
+      display: table !important;
+      width: 100% !important;
+    }
+    .contract-page > :not(.contract-clauses):not(.contract-signatures):not(.contract-footnote) {
+      display: table-header-group;
+    }
+    .contract-clauses,
+    .contract-footnote {
+      display: table-row-group;
+    }
+    .contract-signatures {
+      display: table-footer-group !important;
+      margin-top: 10mm;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
   }
 }

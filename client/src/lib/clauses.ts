@@ -3,7 +3,7 @@
  * جميع البنود مستمدة من قانون العمل المصري رقم 14 لسنة 2025 (المواد ٨٦–١٧٥ والمادة الأولى).
  * كل بند يذكر رقم المادة القانونية المرجعية.
  */
-import { ContractData, arabicNumeral, dateArabic, dateArabicShort, durationText, formatSalary, totalMonths } from "./contract";
+import { ContractData, arabicNumeral, contractEndDate, dateArabic, dateArabicShort, dateArabicShortHtml, durationText, formatSalary, totalMonths } from "./contract";
 
 export interface Clause {
   number: number;
@@ -16,15 +16,11 @@ export interface Clause {
 export function buildClauses(d: ContractData): Clause[] {
   const totalM = totalMonths(d.durationYears ?? 0, d.durationMonths ?? 0);
   const isFixed = d.type === "fixed";
-  const endDate = d.work.startDate && totalM > 0
-    ? (() => {
-        const s = new Date(d.work.startDate);
-        s.setMonth(s.getMonth() + totalM);
-        // معالجة تجاوز أيام الشهر: إن انتقل اليوم (مثل ٣١ يناير) إلى الشهر التالي نأخر لآخر يوم بالشهر السابق
-        s.setDate(0);
-        return dateArabicShort(s.toISOString().slice(0, 10));
-      })()
-    : "";
+  const isTask = d.type === "task";
+  const endDateObj = contractEndDate(d.work.startDate, d.durationYears ?? 0, d.durationMonths ?? 0);
+  const endDate = endDateObj ? dateArabicShort(endDateObj.toISOString().slice(0, 10)) : "";
+  const startDateHtml = d.work.startDate ? dateArabicShortHtml(d.work.startDate) : "..........";
+  const endDateHtml = endDateObj ? dateArabicShortHtml(endDateObj.toISOString().slice(0, 10)) : "..........";
 
   return [
     {
@@ -62,8 +58,10 @@ export function buildClauses(d: ContractData): Clause[] {
       title: "مدة العقد وبدء العمل",
       articleRef: "",
       text: isFixed
-        ? ("**نوع العقد:** عقد عمل محدد المدة، وتبدأ **فترة العقد** من تاريخ " + (d.work.startDate ? dateArabicShort(d.work.startDate) : "..........") + "، وتمتد لمدة " + durationText(d.durationYears ?? 0, d.durationMonths ?? 0) + "، وتنتهي بنهاية يوم " + (endDate || "..........") + " بانقضاء مدته. ويجوز تجديد العقد باتفاق صريح بين الطرفين، وعند التجديد يُعد من جديد عقدًا محدد المدة.")
-        : ("**نوع العقد:** عقد عمل غير محدد المدة (بالقائم/الدائم)، وتبدأ **فترة العقد** من تاريخ " + (d.work.startDate ? dateArabicShort(d.work.startDate) : "..........") + "، ويستمر ما لم يُنَهِ أحد الطرفين العقد بالإخطار الكتابي قبل الإنهاء بثلاثة أشهر."),
+        ? ("**نوع العقد:** محدد المدة — تمتد **فترة العقد** من تاريخ " + startDateHtml + " لمدة " + durationText(d.durationYears ?? 0, d.durationMonths ?? 0) + "، وتنتهي بنهاية يوم " + endDateHtml + " بانقضاء مدته. ويجوز تجديد العقد باتفاق صريح بين الطرفين، وعند التجديد يُعد من جديد عقدًا محدد المدة.")
+        : isTask
+        ? ("**نوع العقد:** محدد المدة لإنجاز عمل معين — تبدأ **فترة العقد** من تاريخ " + startDateHtml + "، ويستمر حتى إنجاز العمل المحدد له، وتُعد المدة محددة بانتهاء إنجاز " + (d.taskDescription ? "العمل المطلوب: «" + d.taskDescription + "»" : "العمل المطلوب (..........)") + "، وذلك وفقًا للمادة (٨٧) من قانون العمل الصادر بالقانون رقم (١٤) لسنة ٢٠٢٥.")
+        : ("**نوع العقد:** غير محدد المدة — تبدأ **فترة العقد** من تاريخ " + startDateHtml + "، ويستمر ما لم يُنَهِ أحد الطرفين العقد بالإخطار الكتابي قبل الإنهاء بثلاثة أشهر."),
     },
     {
       number: 7,
@@ -160,6 +158,8 @@ export function buildClauses(d: ContractData): Clause[] {
       articleRef: "",
       text: isFixed
         ? "يُنهى هذا العقد بانقضاء مدته المحددة بالبند (٦) أعلاه، وفقًا للمادة (١٥٤) من قانون العمل الصادر بالقانون رقم (١٤) لسنة ٢٠٢٥. وفي حالة إنهاء العقد من جانب الطرف الأول قبل انقضاء مدته استحق العامل مكافأة تعادل أجر شهر عن كل سنة من سنوات الخدمة. وإذا كان العقد قد أُبرم أو جُدد لمدة تزيد على خمس سنوات جاز للعامل إنهاؤه دون تعويض عند انقضاء خمس سنوات بعد إخطار الطرف الأول كتابةً قبل ذلك بثلاثة أشهر."
+        : isTask
+        ? "يُنهى هذا العقد بانتهاء العمل المحدد له المشار إليه بالبند (٦) أعلاه، وذلك وفقًا للمادة (١٥٤) من قانون العمل الصادر بالقانون رقم (١٤) لسنة ٢٠٢٥. وفي حالة إنهاء العقد من جانب الطرف الأول قبل إنجاز العمل استحق العامل مكافأة تعادل أجر شهر عن كل سنة من سنوات الخدمة."
         : "في حالة رغبة أي من الطرفين في إنهاء العقد، يلتزم بإخطار الطرف الآخر كتابةً قبل الإنهاء بثلاثة أشهر على الأقل، وذلك وفقًا للمادة (١٥٦) من قانون العمل الصادر بالقانون رقم (١٤) لسنة ٢٠٢٥. ولا يجوز الاتفاق على الإعفاء من شرط الإخطار أو تخفيض مدته، ويجوز الاتفاق على زيادتها. ويجوز للطرف الأول إعفاء العامل من مراعاة مهلة الإخطار كلها أو بعضها في حالة إنهاء العقد من جانب العامل، ويظل العقد قائمًا طوال مهلة الإخطار. وفي حالة الإنهاء من جانب الطرف الأول دون إخطار أو قبل انقضاء مهلة الإخطار، يلتزم بأداء مبلغ يعادل أجر العامل عن مدة المهلة أو الجزء الباقي منها.",
     },
     {

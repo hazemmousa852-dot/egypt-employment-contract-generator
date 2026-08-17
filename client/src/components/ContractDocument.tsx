@@ -4,7 +4,7 @@
  * + توقيعان ودمغة ختم. نسخة للطباعة (print-only) ونسخة للمعاينة على الشاشة.
  */
 import type { ContractData } from "@/lib/contract";
-import { arabicNumeral, dateArabic, dateArabicShort, durationText, formatSalary, totalMonths } from "@/lib/contract";
+import { arabicNumeral, contractEndDate, dateArabic, dateArabicShort, durationText, formatSalary, totalMonths } from "@/lib/contract";
 import { buildClauses } from "@/lib/clauses";
 import React from "react";
 import StampLogo from "@/components/StampLogo";
@@ -14,14 +14,21 @@ interface Props {
   forPrint?: boolean; // true => تُعرض داخل منطقة @media print
 }
 
-/** تحويل **نص** داخل البند إلى <strong> لعرض نوع العقد وفترة العقد بخط واضح */
+/** تحويل **نص** داخل البند إلى <strong> لعرض نوع العقد وفترة العقد بخط واضح، وتفسير HTML التواريخ (span LTR) */
 function renderClauseText(text: string): React.ReactNode {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((part, i) =>
-    part.startsWith("**") && part.endsWith("**")
-      ? <strong key={i}>{part.slice(2, -2)}</strong>
-      : part,
-  );
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{renderClauseText(part.slice(2, -2))}</strong>;
+    }
+    // تفسير وسم <span dir="ltr"> التاريخ فقط (نص آمن مصدره كودنا)
+    const segs = part.split(/(<span[^>]*>[^<]*<\/span>)/g);
+    return segs.map((seg, j) =>
+      seg.startsWith("<span")
+        ? <span key={j} dangerouslySetInnerHTML={{ __html: seg }} />
+        : seg,
+    );
+  });
 }
 
 function LogoBlock({ data }: { data: ContractData }) {
@@ -36,10 +43,9 @@ function LogoBlock({ data }: { data: ContractData }) {
 function ContractBody({ data }: { data: ContractData }) {
   const clauses = buildClauses(data);
   const isFixed = data.type === "fixed";
-  const totalM = totalMonths(data.durationYears ?? 0, data.durationMonths ?? 0);
-  const endDate = data.work.startDate && totalM > 0
-    ? (() => { const s = new Date(data.work.startDate); s.setMonth(s.getMonth() + totalM); s.setDate(0); return dateArabicShort(s.toISOString().slice(0, 10)); })()
-    : "";
+  const isTask = data.type === "task";
+  const endDateObj = contractEndDate(data.work.startDate, data.durationYears ?? 0, data.durationMonths ?? 0);
+  const endDate = endDateObj ? dateArabicShort(endDateObj.toISOString().slice(0, 10)) : "";
 
   return (
     <div className="contract-page">
@@ -79,16 +85,25 @@ function ContractBody({ data }: { data: ContractData }) {
       <div className="mb-5 text-sm">
         <p>
           <strong>نوع العقد: </strong>
-          {isFixed ? `محدد المدة — ${durationText(data.durationYears ?? 0, data.durationMonths ?? 0)}` : "غير محدد المدة"}
-          {isFixed && endDate && ` — ينتهي بنهاية يوم ${endDate}`}
+          {isFixed
+            ? `محدد المدة — ${durationText(data.durationYears ?? 0, data.durationMonths ?? 0)}${endDate ? ` — ينتهي بنهاية يوم ` : ""}`
+            : isTask
+              ? "محدد المدة لإنجاز عمل معين"
+              : "غير محدد المدة"}
+          {endDate && <span dir="ltr" style={{ display: "inline-block", unicodeBidi: "embed", textAlign: "right" }}>{endDate}</span>}
         </p>
-        <p><strong>تاريخ بدء العمل: </strong>{data.work.startDate ? dateArabicShort(data.work.startDate) : ".........."}</p>
+        <p>
+          <strong>تاريخ بدء العمل: </strong>
+          {data.work.startDate
+            ? <span dir="ltr" style={{ display: "inline-block", unicodeBidi: "embed", textAlign: "right" }}>{dateArabicShort(data.work.startDate)}</span>
+            : ".........."}
+        </p>
         <p><strong>الوظيفة: </strong>{data.employee.jobTitle || ".........."}{data.employee.department ? ` — قسم ${data.employee.department}` : ""}</p>
         <p><strong>الأجر الشهري: </strong>{data.salary.basicSalary ? formatSalary(data.salary.basicSalary) : ".........."}</p>
       </div>
 
       {/* البنود التفصيلية */}
-      <div className="space-y-3">
+      <div className="contract-clauses space-y-3">
         {clauses.map((c) => (
           <div key={c.number}>
             <h2 className="font-bold text-base mb-0.5">
@@ -100,26 +115,23 @@ function ContractBody({ data }: { data: ContractData }) {
         ))}
       </div>
 
-      {/* التوقيعات */}
-      <div className="mt-10 grid grid-cols-2 gap-8">
+      <p className="contract-footnote text-[10pt] text-muted-foreground mt-8 pt-3 border-t border-dashed border-border">
+        حُرر هذا العقد في تاريخ {dateArabic(data.contractDate)} ميلاديًا، وطُبع من هذا النموذج نسخة للطرف الأول ونسخة للطرف الثاني ونسخة بمكتب التأمينات الاجتماعية المختص ونسخة بالجهة الإدارية المختصة.
+      </p>
+
+      {/* التوقيعات — تتكرر أسفل كل صفحة عند الطباعة */}
+      <div className="contract-signatures mt-10 grid grid-cols-2 gap-8 page-break-avoid">
         <div className="text-center border-t border-[#1a1a2e]/40 pt-3">
-          <p className="font-bold text-sm mb-8">الطرف الأول — صاحب العمل</p>
-          <div className="relative inline-block">
-            <StampLogo size={76} className="rotate-[-8deg]" />
-          </div>
-          <p className="text-sm mt-4">الاسم: ..............................</p>
+          <p className="font-bold text-sm mb-12">الطرف الأول — صاحب العمل</p>
+          <p className="text-sm">الاسم: ..............................</p>
           <p className="text-sm">التوقيع: ..............................</p>
         </div>
         <div className="text-center border-t border-[#1a1a2e]/40 pt-3">
-          <p className="font-bold text-sm mb-8">الطرف الثاني — العامل</p>
-          <p className="text-sm mt-12">الاسم: ..............................</p>
-          <p className="text-sm mt-2">التوقيع: ..............................</p>
+          <p className="font-bold text-sm mb-12">الطرف الثاني — العامل</p>
+          <p className="text-sm">الاسم: ..............................</p>
+          <p className="text-sm">التوقيع: ..............................</p>
         </div>
       </div>
-
-      <p className="text-[10pt] text-muted-foreground mt-8 pt-3 border-t border-dashed border-border">
-        حُرر هذا العقد في تاريخ {dateArabic(data.contractDate)} ميلاديًا، وطُبع من هذا النموذج نسخة للطرف الأول ونسخة للطرف الثاني ونسخة بمكتب التأمينات الاجتماعية المختص ونسخة بالجهة الإدارية المختصة.
-      </p>
     </div>
   );
 }

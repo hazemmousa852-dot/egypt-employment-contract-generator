@@ -141,7 +141,7 @@ const groups: { title: string; intro: string; items: FaqItem[] }[] = [
 
 export default function FaqSection() {
   return (
-    <section id="faq" className="py-14 md:py-16">
+    <section id="faq" className="no-print py-14 md:py-16">
       <div className="container">
         {/* ترويسة القسم */}
         <div className="mb-10 flex items-end gap-4">

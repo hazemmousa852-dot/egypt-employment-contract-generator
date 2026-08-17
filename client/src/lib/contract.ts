@@ -3,7 +3,7 @@
  * بيانات العقد ومولد النصوص القانونية المطابقة لقانون العمل المصري 14 لسنة 2025.
  */
 
-export type ContractType = "fixed" | "indefinite";
+export type ContractType = "fixed" | "indefinite" | "task";
 
 export interface PartyData {
   name: string;
@@ -49,6 +49,7 @@ export interface ContractData {
   type: ContractType;
   durationYears?: number; // عدد سنوات العقد محدد المدة
   durationMonths?: number; // عدد أشهر إضافية
+  taskDescription?: string; // وصف العمل المطلوب إنجازه (لعقود إنجاز عمل معين)
   employer: PartyData;
   employee: EmployeeData;
   salary: SalaryData;
@@ -152,6 +153,24 @@ export function dateArabicShort(dateStr: string): string {
   const d = new Date(dateStr);
   const monthsAr = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
   return `${arabicNumeral(d.getDate())}/${arabicNumeral(d.getMonth() + 1)}/${arabicNumeral(d.getFullYear())}م`;
+}
+
+/** صيغة HTML للتاريخ يوم/شهر/سنة تُلف في span LTR منعًا لانعكاس الترتيب داخل نص RTL */
+export function dateArabicShortHtml(dateStr: string): string {
+  if (!dateStr) return "";
+  const inner = dateArabicShort(dateStr);
+  return `<span dir="ltr" style="display:inline-block;unicode-bidi:embed">${inner}</span>`;
+}
+
+/** حساب تاريخ نهاية العقد المحدد المدة: آخر يوم قبل إتمام المدة (المدة تنتهي قبل بداية إتمامها بيوم) */
+export function contractEndDate(startDate: string, years: number, months: number): Date | null {
+  if (!startDate) return null;
+  const totalM = years * 12 + months;
+  if (totalM <= 0) return null;
+  const s = new Date(startDate);
+  s.setMonth(s.getMonth() + totalM);
+  s.setDate(s.getDate() - 1);
+  return s;
 }
 
 export function totalMonths(years: number, months: number): number {
