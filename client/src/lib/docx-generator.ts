@@ -3,10 +3,28 @@
  * يولّد مستند Word RTL بخط Cairo مع جميع بنود العقد، قابل للتعديل والطباعة.
  */
 import { Document, Packer, Paragraph, TextRun, AlignmentType, PageBreak } from "docx";
-import { ContractData, arabicNumeral, contractEndDate, dateArabic, dateArabicShort, durationText } from "./contract";
+import { ContractData, arabicNumeral, contractEndDate, dateArabic, dateArabicShort, durationText, htmlToEasternDateText, numberToArabicWords } from "./contract";
 import { buildClauses } from "./clauses";
 
 const FONT = "Cairo";
+
+/** تاريخ بالأرقام العربية الشرقية بصيغة يوم/شهر/سنة مثل «٧/٠٨/٢٠٢٦م» */
+function dateArabicEastern(date: Date | string): string {
+  if (!date) return "..........";
+  let d: Date;
+  if (typeof date === "string") {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      const [y, m, day] = date.split("-").map(Number);
+      d = new Date(y, m - 1, day);
+    } else {
+      d = new Date(date);
+    }
+  } else {
+    d = date;
+  }
+  if (isNaN(d.getTime())) return "..........";
+  return arabicNumeral(`${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}م`);
+}
 
 /** تقسيم النص الغني **bold** إلى مقاطع */
 function mixedParagraph(text: string, align: "right" | "center" | "justify" = "justify", size = 24, firstIndent = false): Paragraph {
@@ -57,12 +75,13 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
   const clauses = buildClauses(d);
   const endDateObj = contractEndDate(d.work.startDate, d.durationYears ?? 0, d.durationMonths ?? 0);
   const endDate = endDateObj ? dateArabicShort(endDateObj.toISOString().slice(0, 10)) : "";
+  const endDateIso = endDateObj ? endDateObj.toISOString().slice(0, 10) : null;
 
   const typeText =
     d.type === "fixed"
-      ? `نوع العقد: محدد المدة — مدة العقد: ${durationText(d.durationYears ?? 0, d.durationMonths ?? 0)} — يبدأ: ${dateArabicShort(d.work.startDate)} وينتهي: ${endDate}`
+      ? `نوع العقد: محدد المدة — مدة العقد: ${durationText(d.durationYears ?? 0, d.durationMonths ?? 0)} — يبدأ: ${dateArabicEastern(d.work.startDate)} وينتهي: ${endDateIso ? dateArabicEastern(endDateIso) : ".........."}`
       : d.type === "task"
-        ? `نوع العقد: محدد المدة لإنجاز عمل معين — يبدأ: ${dateArabicShort(d.work.startDate)}`
+        ? `نوع العقد: محدد المدة لإنجاز عمل معين — يبدأ: ${dateArabicEastern(d.work.startDate)}`
         : "نوع العقد: غير محدد المدة";
 
   const doc = new Document({
@@ -88,6 +107,7 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
           mixedParagraph(d.employer.name || "..........", "right", 26, true),
           mixedParagraph(`السجل التجاري / الرقم الضريبي: ${d.employer.commercialRegister || ".........."}`, "right", 22, true),
           mixedParagraph(`العنوان: ${d.employer.address || ".........."}`, "right", 22, true),
+          mixedParagraph(`هاتف: ${d.employer.phone || ".........."} — بريد: ${d.employer.email || ".........."}`, "right", 22, true),
           new Paragraph({ spacing: { after: 100 }, children: [] }),
           mixedParagraph("الطرف الثاني: العامل", "right", 24, true),
           mixedParagraph(d.employee.name || "..........", "right", 26, true),
@@ -97,7 +117,7 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
             22,
             true,
           ),
-          mixedParagraph(`محل الإقامة: ${d.employee.address || ".........."}`, "right", 22, true),
+          mixedParagraph(`محل الإقامة: ${d.employee.address || ".........."} — هاتف: ${d.employee.phone || ".........."}`, "right", 22, true),
           new Paragraph({ spacing: { after: 100 }, children: [] }),
           mixedParagraph("مسمى الوظيفة", "right", 24, true),
           mixedParagraph(`${d.employee.jobTitle || ".........."}${d.employee.department ? " — قسم/إدارة: " + d.employee.department : ""}`, "right", 24, true),
@@ -108,7 +128,7 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
                 new Paragraph({ spacing: { after: 100 }, children: [] }),
                 mixedParagraph("الأجر الشهري", "right", 24, true),
                 mixedParagraph(
-                  `${new Intl.NumberFormat("en-US").format(d.salary.basicSalary)} جنيه شهريًا`,
+                  `${new Intl.NumberFormat("en-US").format(d.salary.basicSalary)} (${numberToArabicWords(d.salary.basicSalary)} جنيه) فقط لا غير شهريًا`,
                   "right",
                   24,
                   true,
@@ -116,11 +136,19 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
               ]
             : []),
           new Paragraph({ children: [new PageBreak()] }),
-          ...clauses.map((c) => [
-            clauseHeading(`البند (${arabicNumeral(c.number)}): ${c.title}`),
-            mixedParagraph(c.text),
-            ...(c.breakAfter ? [new Paragraph({ children: [new PageBreak()] })] : []),
-          ]).flat(),
+          ...clauses.map((c) => {
+            // تنظيف النص: إزالة وسوم ** للتأكيد وتحويل تواريخ HTML إلى نص عربي شرقي
+            let txt = c.text.replace(/\*\*(.+?)\*\*/g, "$1").replace(/<span[^>]*>/g, "").replace(/<\/span>/g, "");
+            txt = txt.replace(/\d+\s*\/\s*\d+\s*\/\s*\d+م?/g, (m) => {
+              const parts = m.replace("م", "").split(/\s*\/\s*/);
+              return arabicNumeral(`${parts[0]}/${parts[1]}/${parts[2]}م`);
+            });
+            return [
+              clauseHeading(`البند (${arabicNumeral(c.number)}): ${c.title}`),
+              mixedParagraph(txt),
+              ...(c.breakAfter ? [new Paragraph({ children: [new PageBreak()] })] : []),
+            ];
+          }).flat(),
           new Paragraph({ children: [new PageBreak()] }),
           mixedParagraph(
             `حُرر هذا العقد في تاريخ ${d.contractDate ? dateArabic(d.contractDate) : ".........."}، من أربع نسخ أصلية، استلم كل من الطرفين نسخة، وأُودعت نسخة بمكتب التأمينات الاجتماعية المختصة، ونسخة بالجهة الإدارية المختصة.`,

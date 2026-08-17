@@ -4,7 +4,11 @@
  * خطوات إدخال على بطاقات بإطار مزدوج ذهبي/أحمر، معاينة A4، زر طباعة بارز.
  * ألوان: عاجي ورقي، حبر كحلي، أحمر ختم، ذهبي عتيق. خطوط: Amiri + Cairo.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { MemoryStick } from "lucide-react";
+
+const COMPANY_STORAGE_KEY = "eccg-company-v1";
 import StampLogo from "@/components/StampLogo";
 import ContractForm from "@/components/ContractForm";
 import ContractDocument from "@/components/ContractDocument";
@@ -30,9 +34,57 @@ const defaultData: ContractData = {
 };
 
 export default function Home() {
-  const [data, setData] = useState<ContractData>(defaultData);
+  // تهيئة البيانات من التخزين المحلي إذا وُجدت بيانات شركة محفوظة مع موافقة المستخدم
+  const [initialData] = useState<ContractData>(() => {
+    try {
+      const saved = localStorage.getItem(COMPANY_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as ContractData;
+        // نتحقق من سلامة الحقول المحفوظة (بيانات صاحب العمل + مكان/طبيعة العمل فقط)
+        if (parsed.employer?.name || parsed.employer?.commercialRegister) {
+          return { ...defaultData, employer: { ...defaultData.employer, ...parsed.employer }, work: { ...defaultData.work, ...parsed.work } };
+        }
+      }
+    } catch {
+      /* بيانات محفوظة تالفة — نتجاهلها */
+    }
+    return defaultData;
+  });
+
+  const [data, setData] = useState<ContractData>(initialData);
+  const [saveCompany, setSaveCompany] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(`${COMPANY_STORAGE_KEY}:optin`) === "1";
+    } catch {
+      return false;
+    }
+  });
   const [showContract, setShowContract] = useState(false);
   const [showPrint, setShowPrint] = useState(false);
+
+  // الحفظ التلقائي الاختياري: يُحفظ عند أي تعديل فقط إذا فعّل المستخدم الخيار
+  useEffect(() => {
+    try {
+      if (saveCompany) {
+        const toSave: ContractData = {
+          contractNumber: "",
+          contractDate: "",
+          type: "fixed",
+          taskDescription: "",
+          employer: data.employer,
+          employee: { name: "", gender: "male", nationalId: "", jobTitle: "", department: "", qualification: "", phone: "", address: "" },
+          salary: { basicSalary: 0, paymentMethod: "cash" },
+          work: { startDate: "", trialPeriod: false, workLocation: data.work.workLocation, workNature: data.work.workNature, dailyHours: data.work.dailyHours, weeklyRestDay: data.work.weeklyRestDay, nonCompete: false },
+        };
+        localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(toSave));
+        localStorage.setItem(`${COMPANY_STORAGE_KEY}:optin`, "1");
+      } else {
+        localStorage.setItem(`${COMPANY_STORAGE_KEY}:optin`, "0");
+      }
+    } catch {
+      /* تخزين غير متاح */
+    }
+  }, [saveCompany, data.employer, data.work.workLocation, data.work.workNature, data.work.dailyHours, data.work.weeklyRestDay]);
 
   const handleGenerate = () => {
     setShowContract(true);
@@ -76,6 +128,7 @@ export default function Home() {
 
   const handleReset = () => {
     setData(defaultData);
+    setSaveCompany(false);
     setShowContract(false);
     setShowPrint(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -192,6 +245,16 @@ export default function Home() {
             <div className="h-[3px] flex-1 bg-gradient-to-r from-transparent via-[var(--gold)] to-[var(--seal)]" />
           </div>
           <div className="paper-grain relative">
+            <div className="mb-4 flex flex-wrap items-center gap-3 rounded-[3px] border border-[var(--gold)]/40 bg-[var(--gold)]/5 px-4 py-2.5">
+              <Checkbox id="save-company" checked={saveCompany} onCheckedChange={(v) => setSaveCompany(v === true)} className="data-[state=checked]:bg-[var(--seal)] data-[state=checked]:border-[var(--seal)]" />
+              <label htmlFor="save-company" className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                <MemoryStick size={15} className="text-[var(--seal)]" />
+                <span className="font-semibold">احفظ بيانات الشركة في هذا المتصفح تلقائيًا</span>
+              </label>
+              <span className="text-xs text-muted-foreground">
+                {saveCompany ? "سيتم تعبئة بيانات الشركة تلقائيًا في المرة القادمة — تُحفظ محليًا على جهازك فقط ولا تُرسل لأي جهة" : "البيانات تُمسح عند إغلاق الصفحة ما لم تفعّل هذا الخيار"}
+              </span>
+            </div>
             <ContractForm data={data} onChange={setData} onGenerate={handleGenerate} />
           </div>
         </section>

@@ -178,3 +178,17 @@ export function contractEndDate(startDate: string, years: number, months: number
 export function totalMonths(years: number, months: number): number {
   return years * 12 + months;
 }
+
+/** التاريخ بالأرقام العربية الشرقية «٧/٠٨/٢٠٢٦م» لملف Word */
+export function dateArabicEastern(dateStr: string): string {
+  if (!dateStr) return "..........";
+  const d = new Date(dateStr);
+  return arabicNumeral(`${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}م`);
+}
+
+/** تحويل HTML التاريخ (span LTR) إلى نص عربي شرقي نظيف لملف Word */
+export function htmlToEasternDateText(html: string): string {
+  const m = html.match(/>(\d+)\s*\/\s*(\d+)\s*\/\s*(\d+)/);
+  if (!m) return html;
+  return arabicNumeral(`${m[1]}/${m[2]}/${m[3]}م`);
+}
