@@ -11,9 +11,10 @@ import ContractDocument from "@/components/ContractDocument";
 import FaqSection from "@/components/FaqSection";
 import type { ContractData, ContractType } from "@/lib/contract";
 import { Button } from "@/components/ui/button";
-import { Printer, RotateCcw, FileSignature, Scale, PrinterCheck, Download, AlertTriangle } from "lucide-react";
+import { Printer, RotateCcw, FileSignature, Scale, PrinterCheck, Download, AlertTriangle, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { downloadContractPdf } from "@/lib/pdf";
+import { downloadContractDocx } from "@/lib/docx-generator";
 
 const defaultData: ContractData = {
   contractNumber: "",
@@ -51,6 +52,17 @@ export default function Home() {
       toast.success("تم تحميل ملف PDF");
     } catch {
       toast.error("تعذر إنشاء ملف PDF — جرّب خيار الطباعة بدلًا من ذلك");
+    }
+  };
+
+  const handleDownloadDocx = async () => {
+    if (!data.employee.name && !data.employer.name) { toast.error("اضغط أولًا على زر «حرّر العقد» لتوليد المسودة — تأكد من إدخال اسم صاحب العمل والعامل"); return; }
+    try {
+      toast.info("جارٍ إعداد ملف Word...");
+      await downloadContractDocx(data);
+      toast.success("تم تحميل ملف Word");
+    } catch {
+      toast.error("تعذر إنشاء ملف Word — جرّب خيار تحميل PDF بدلًا من ذلك");
     }
   };
 
@@ -198,6 +210,9 @@ export default function Home() {
               <div className="flex gap-2">
                 <Button variant="outline" onClick={handleDownloadPdf} size="lg" className="gap-2 font-display text-base rounded-[3px] bg-white">
                   <Download size={17} /> حمّل PDF
+                </Button>
+                <Button variant="outline" onClick={handleDownloadDocx} size="lg" className="gap-2 font-display text-base rounded-[3px] bg-white">
+                  <FileText size={17} /> حمّل Word
                 </Button>
                 <Button onClick={handlePrint} size="lg" className="gap-2 font-display text-base rounded-[3px]">
                   <Printer size={17} /> اطبع العقد كاملًا
