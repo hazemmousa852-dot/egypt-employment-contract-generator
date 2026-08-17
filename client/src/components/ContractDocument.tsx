@@ -120,14 +120,14 @@ function ContractBody({ data }: { data: ContractData }) {
       </p>
 
       {/* التوقيعات — تتكرر أسفل كل صفحة عند الطباعة */}
-      <div className="contract-signatures mt-10 grid grid-cols-2 gap-8 page-break-avoid">
-        <div className="text-center border-t border-[#1a1a2e]/40 pt-3">
-          <p className="font-bold text-sm mb-12">الطرف الأول — صاحب العمل</p>
+      <div className="contract-signatures mt-10 flex items-start justify-between gap-8 page-break-avoid">
+        <div className="flex-1 text-center border-t border-[#1a1a2e]/40 pt-3">
+          <p className="font-bold text-sm mb-6">الطرف الأول — صاحب العمل</p>
           <p className="text-sm">الاسم: ..............................</p>
           <p className="text-sm">التوقيع: ..............................</p>
         </div>
-        <div className="text-center border-t border-[#1a1a2e]/40 pt-3">
-          <p className="font-bold text-sm mb-12">الطرف الثاني — العامل</p>
+        <div className="flex-1 text-center border-t border-[#1a1a2e]/40 pt-3">
+          <p className="font-bold text-sm mb-6">الطرف الثاني — العامل</p>
           <p className="text-sm">الاسم: ..............................</p>
           <p className="text-sm">التوقيع: ..............................</p>
         </div>
