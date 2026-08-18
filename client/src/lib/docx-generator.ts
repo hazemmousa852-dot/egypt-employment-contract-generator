@@ -221,7 +221,7 @@ function buildFooter(d: ContractData): Footer {
 }
 
 /* ========================= الترويسة: اللوجو ========================= */
-function buildHeader(logoArray: Uint8Array | null, title: string, subtitle: string, rtl = true): Header {
+function buildHeader(logoArray: Uint8Array | null, logoEmu: { width: number; height: number } | null, title: string, subtitle: string, rtl = true): Header {
   const font = rtl ? FONT : FONT_EN;
   const logoPara = logoArray
     ? new Paragraph({
@@ -229,7 +229,7 @@ function buildHeader(logoArray: Uint8Array | null, title: string, subtitle: stri
         alignment: AlignmentType.CENTER,
         spacing: { after: 100 },
         children: [
-          new ImageRun({ data: logoArray, transformation: { width: 1600, height: 960 }, type: "png" }),
+          new ImageRun({ data: logoArray, transformation: { width: logoEmu?.width ?? 1440, height: logoEmu?.height ?? 810 }, type: "png" }),
         ],
       })
     : null;
@@ -287,7 +287,7 @@ function buildHeader(logoArray: Uint8Array | null, title: string, subtitle: stri
 }
 
 /* ========================= ترويسة ثنائية اللغة (صف عربي + صف إنجليزي) ========================= */
-function buildHeaderBoth(logoArray: Uint8Array | null, titleAr: string, subtitleAr: string, titleEn: string, subtitleEn: string): Header {
+function buildHeaderBoth(logoArray: Uint8Array | null, logoEmu: { width: number; height: number } | null, titleAr: string, subtitleAr: string, titleEn: string, subtitleEn: string): Header {
   return new Header({
     children: [
       ...(logoArray
@@ -296,7 +296,7 @@ function buildHeaderBoth(logoArray: Uint8Array | null, titleAr: string, subtitle
               bidirectional: true,
               alignment: AlignmentType.CENTER,
               spacing: { after: 100 },
-              children: [new ImageRun({ data: logoArray, transformation: { width: 1600, height: 960 }, type: "png" })],
+              children: [new ImageRun({ data: logoArray, transformation: { width: logoEmu?.width ?? 1440, height: logoEmu?.height ?? 810 }, type: "png" })],
             }),
           ]
         : []),
@@ -344,6 +344,20 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
     : contractEndDate(d.work.startDate, d.durationYears ?? 0, d.durationMonths ?? 0);
   const endDateIso = endDateObj ? endDateObj.toISOString().slice(0, 10) : null;
   const logoArray = dataUrlToArray(d.logo);
+  // قراءة أبعاد PNG الأصلية من ترويسة IHDR لضبط نسبة اللوجو دون تشويه
+  let logoEmu: { width: number; height: number } | null = null;
+  if (logoArray && logoArray.length > 24) {
+    const w = (logoArray[16] << 24) | (logoArray[17] << 16) | (logoArray[18] << 8) | logoArray[19];
+    const h = (logoArray[20] << 24) | (logoArray[21] << 16) | (logoArray[22] << 8) | logoArray[23];
+    if (Number.isInteger(w) && Number.isInteger(h) && w > 0 && h > 0) {
+      const MAX_W_EMU = 3429; // 3.6 سم عرضًا كحد أقصى للترويسة
+      const MAX_H_EMU = 1905; // 2 سم ارتفاعًا كحد أقصى
+      let emuW = Math.round((MAX_H_EMU * w) / h); // ابدأ بالارتفاع الأقصى
+      let emuH = MAX_H_EMU;
+      if (emuW > MAX_W_EMU) { emuW = MAX_W_EMU; emuH = Math.round((MAX_W_EMU * h) / w); }
+      logoEmu = { width: emuW, height: emuH };
+    }
+  }
 
   const isTraining = d.type === "training";
   const isConsultant = d.type === "consultant";
@@ -443,9 +457,9 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
     sections: [
       {
         properties: {
-          page: { margin: { top: 1400, right: 1200, bottom: 1800, left: 1200 } },
+          page: { margin: { top: 1200, right: 1200, bottom: 1700, left: 1200 } },
         } as never,
-        headers: { default: d.language === "both" ? buildHeaderBoth(logoArray, docTitle, docSubtitle, docTitleEn, docSubtitleEn) : buildHeader(logoArray, d.language === "en" ? docTitleEn : docTitle, d.language === "en" ? docSubtitleEn : docSubtitle, d.language !== "en") },
+        headers: { default: d.language === "both" ? buildHeaderBoth(logoArray, logoEmu, docTitle, docSubtitle, docTitleEn, docSubtitleEn) : buildHeader(logoArray, logoEmu, d.language === "en" ? docTitleEn : docTitle, d.language === "en" ? docSubtitleEn : docSubtitle, d.language !== "en") },
         footers: { default: buildFooter(d) },
         children: [
           para(`الطرف الأول: ${party1Label}`, "right", 24, true),
@@ -493,7 +507,7 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
                 empty(100),
                 para("الأجر الإضافي", "right", 24, true),
                 para(
-                  `ساعة العمل النهارية الإضافية بأجر ساعتها مضافًا إليها نسبة (35%)، والساعة الليلية بأجر ساعتها مضافًا إليها نسبة (70%)، وذلك عن ${arabicNumeral((d.salary.overtimeDayHours ?? 0) + (d.salary.overtimeNightHours ?? 0))} ساعة إضافية شهريةًا تقديرًيا`,
+                  `ساعة العمل النهارية الإضافية بأجر ساعتها مضافًا إليها نسبة (35%)، والساعة الليلية بأجر ساعتها مضافًا إليها نسبة (70%)، وذلك عن ${arabicNumeral((d.salary.overtimeDayHours ?? 0) + (d.salary.overtimeNightHours ?? 0))} ساعة إضافية شهريًا تقديريًا`,
                   "right",
                   24,
                   true,
