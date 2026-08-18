@@ -521,7 +521,7 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
             24,
             true,
           ),
-          empty(300),
+          empty(120),
           ...signaturesAr,
         ],
       },
