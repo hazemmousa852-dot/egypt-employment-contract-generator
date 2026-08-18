@@ -119,9 +119,9 @@ function fmtShort(iso: string): string {
 }
 
 function LogoBlock({ data }: { data: ContractData }) {
-  if (!data.logo) return <div className="w-24 h-24 flex items-center justify-center border border-border rounded bg-muted/50 text-xs text-muted-foreground">بدون شعار</div>;
+  if (!data.logo) return <div className="w-28 h-28 flex items-center justify-center border border-border rounded bg-muted/50 text-xs text-muted-foreground">بدون شعار</div>;
   return (
-    <div className="w-24 h-24 flex items-center justify-center border border-border rounded bg-white">
+    <div className="w-28 h-28 shrink-0 flex items-center justify-center bg-white">
       <img src={data.logo} alt="شعار الشركة" className="max-w-full max-h-full object-contain" />
     </div>
   );

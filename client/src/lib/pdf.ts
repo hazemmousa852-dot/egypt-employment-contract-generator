@@ -3,27 +3,33 @@
  * يحوّل صفحة العقد إلى ملف PDF متعدد الصفحات بحجم A4
  * باستخدام html2canvas-pro وjsPDF دون أي اعتمادات خلفية.
  * التقاط واحد للعقد كاملًا ثم تقسيم الصورة إلى شرائح بارتفاع صفحة A4
- * بحيث يطابق تدفق الصفحات عند الطباعة الفعلية.
+ * مع تقطيع ذكي عند حدود البنود (لا ينكسر البند بين صفحتين)،
+ * وفوتر توقيعات الطرفين يتكرر أسفل كل صفحة مطابقةً لتصميم المعاينة.
  */
 import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 
 const A4_W_MM = 210;
 const A4_H_MM = 297;
+/** الحد الأدنى لنسبة المحتوى المملوء في الصفحة الأخيرة قبل إبقاء الفوتر كامل الارتفاع */
+const MIN_LAST_PAGE_FILL = 0.35;
 /** هوامش الطباعة المطابقة لـ @page في index.css */
 const PAGE_MARGIN_MM = { x: 14, y: 12 };
+const FOTER_H_MM = 26; // ارتفاع فوتر التوقيعات أسفل كل صفحة
 
 const CONTENT_W_MM = A4_W_MM - PAGE_MARGIN_MM.x * 2;
-const CONTENT_H_MM = A4_H_MM - PAGE_MARGIN_MM.y * 2;
+const CONTENT_H_MM = A4_H_MM - PAGE_MARGIN_MM.y * 2 - FOTER_H_MM;
 
 /**
  * يرسم خانات توقيع الطرفين أسفل شريحة الصفحة على لوحة canvas.
+ * التصميم مطابق للمعاينة: عنوان كل طرف + خطين للاسم والتوقيع،
+ * الطرف الأول على اليمين في الاتجاه العربي.
  */
 function drawSignatureBlock(
   sliceCanvas: HTMLCanvasElement,
   isArabic: boolean,
 ): HTMLCanvasElement {
-  const blockH = Math.round(sliceCanvas.width * (26 / 210));
+  const blockH = Math.round(sliceCanvas.width * (FOTER_H_MM / 210));
   const sheet = document.createElement("canvas");
   sheet.width = sliceCanvas.width;
   sheet.height = sliceCanvas.height + blockH;
@@ -35,21 +41,19 @@ function drawSignatureBlock(
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, sliceCanvas.height, sheet.width, blockH);
 
-  // خط علوي ذهبي داكن يمتد على عرض الصفحة فوق منطقة التوقيع
+  // خط علوي داكن يمتد على عرض منطقة المحتوى فوق منطقة التوقيع
   const marginPx = Math.round(sheet.width * (14 / 210));
-  const ruleY = sliceCanvas.height + Math.round(blockH * 0.12);
-  ctx.strokeStyle = "rgba(26,26,46,0.45)";
-  ctx.lineWidth = Math.max(1, Math.round(sheet.width / 800));
+  const ruleY = sliceCanvas.height + Math.round(blockH * 0.10);
+  ctx.strokeStyle = "rgba(26,26,46,0.55)";
+  ctx.lineWidth = Math.max(1, Math.round(sheet.width / 750));
   ctx.beginPath();
   ctx.moveTo(marginPx, ruleY);
   ctx.lineTo(sheet.width - marginPx, ruleY);
   ctx.stroke();
 
   const colW = (sheet.width - marginPx * 2) / 2;
-  const y1 = ruleY + Math.round(blockH * 0.30);
-  const y2 = y1 + Math.round(blockH * 0.30);
-  const fontSize = Math.max(9, Math.round(sheet.width * (3.4 / 210)));
-  ctx.font = `bold ${fontSize}px "Amiri", "Cairo", serif`;
+  const fontSize = Math.max(10, Math.round(sheet.width * (3.2 / 210)));
+  const lineGap = Math.round(fontSize * 1.15);
   ctx.fillStyle = "#1a1a2e";
   ctx.textAlign = "center";
 
@@ -58,85 +62,176 @@ function drawSignatureBlock(
 
   const cx1 = marginPx + colW / 2;
   const cx2 = sheet.width - marginPx - colW / 2;
-
   // في الاتجاه العربي: الطرف الأول على اليمين
   const leftCx = isArabic ? cx2 : cx1;
   const rightCx = isArabic ? cx1 : cx2;
 
   ctx.font = `bold ${fontSize}px "Amiri", "Cairo", sans-serif`;
-  ctx.fillText(firstLabel, rightCx, y1);
-  ctx.fillText(secondLabel, leftCx, y1);
+  ctx.fillText(firstLabel, rightCx, ruleY + lineGap);
+  ctx.fillText(secondLabel, leftCx, ruleY + lineGap);
 
   ctx.font = `${fontSize}px "Amiri", "Cairo", sans-serif`;
   const nameLine = isArabic ? "الاسم: .............................." : "Name: ..............................";
   const signLine = isArabic ? "التوقيع: .............................." : "Signature: ..............................";
-  ctx.fillText(nameLine, rightCx, y2);
-  ctx.fillText(nameLine, leftCx, y2);
-  ctx.fillText(signLine, rightCx, y2 + fontSize + 2);
-  ctx.fillText(signLine, leftCx, y2 + fontSize + 2);
+  ctx.fillText(nameLine, rightCx, ruleY + lineGap * 2.1);
+  ctx.fillText(nameLine, leftCx, ruleY + lineGap * 2.1);
+  ctx.fillText(signLine, rightCx, ruleY + lineGap * 3.2);
+  ctx.fillText(signLine, leftCx, ruleY + lineGap * 3.2);
 
   return sheet;
+}
+
+/**
+ * يجلب إحداثيات Y السفلية لحدود الأقسام القابلة للانقسام
+ * (أقسام البنود وأقسام الأطراف والملخص) نسبيًا إلى أعلى العنصر الملتقط.
+ */
+function collectBreakPoints(contractEl: HTMLElement, cssPxPerMm: number): number[] {
+  const rect = contractEl.getBoundingClientRect();
+  const points: number[] = [];
+  contractEl.querySelectorAll<HTMLElement>(
+    ".contract-clauses > div, .contract-signatures, .contract-footnote",
+  ).forEach((sec) => {
+    const secRect = sec.getBoundingClientRect();
+    points.push((secRect.bottom - rect.top) * cssPxPerMm);
+  });
+  return points.sort((a, b) => a - b);
+}
+
+/**
+ * يختار موضع القطع الأقرب لنهاية بند دون تجاوز الحد الأقصى المسموح.
+ */
+function pickCutPoint(breakPoints: number[], maxCutY: number, minCutY: number): number {
+  // أقرب نهاية بند لا تتجاوز الحد الأقصى
+  let best = -1;
+  for (const bp of breakPoints) {
+    if (bp <= maxCutY) best = bp;
+    else break;
+  }
+  if (best >= minCutY) return best;
+  // إن لم توجد نهاية بند صالحة، اقطع عند الحد الأقصى (البنود الطويلة جدًا)
+  return maxCutY;
+}
+
+/**
+ * html2canvas-pro قد يفشل في رسم صور base64 (data:) بصمت بسبب crossOrigin،
+ * لذا نحفظ إحداثياتها ونرسم اللوجو يدويًا فوق الالتقاط بعد الانتهاء.
+ */
+type ImagePosition = { rect: DOMRect; naturalW: number; naturalH: number; src: string };
+
+function collectImagePositions(root: HTMLElement): ImagePosition[] {
+  const positions: ImagePosition[] = [];
+  const rootRect = root.getBoundingClientRect();
+  root.querySelectorAll<HTMLImageElement>('img[src^="data:"]').forEach((img) => {
+    if (!img.complete || !img.naturalWidth) return;
+    const rect = img.getBoundingClientRect();
+    positions.push({
+      rect: new DOMRect(rect.left - rootRect.left, rect.top - rootRect.top, rect.width, rect.height),
+      naturalW: img.naturalWidth,
+      naturalH: img.naturalHeight,
+      src: img.src,
+    });
+  });
+  return positions;
 }
 
 /**
  * يلتقط عنصر العقد ويولّد ملف PDF متعدد صفحات A4 ثم يبدأ التحميل.
  */
 export async function downloadContractPdf(contractEl: HTMLElement): Promise<void> {
-  // استنساخ عقدة العقد في DOM مؤقتًا مع تطبيق إخفاء عناصر no-print
+  // إخفاء عناصر no-print مؤقتًا (التوقيعات الختامية من المتن)
   // لأن html2canvas-pro لا يطبّق قواعد @media print تلقائيًا
   const hiddenEls: HTMLElement[] = [];
-  contractEl.querySelectorAll(".no-print").forEach((el) => {
-    hiddenEls.push(el as HTMLElement);
-    (el as HTMLElement).style.display = "none";
+  contractEl.querySelectorAll<HTMLElement>(".no-print").forEach((el) => {
+    hiddenEls.push(el);
+    el.style.display = "none";
   });
+
+  const imagePositions = collectImagePositions(contractEl);
 
   try {
-  // التقاط واحد للعقد كاملًا (مستمر التدفق كما في الطباعة)
-  const canvas = await html2canvas(contractEl, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: "#ffffff",
-    logging: false,
-    windowWidth: contractEl.scrollWidth,
-    imageTimeout: 0,
-    allowTaint: true,
-  });
+    // التقاط واحد للعقد كاملًا (مستمر التدفق كما في الطباعة)
+    const canvas = await html2canvas(contractEl, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      logging: false,
+      windowWidth: contractEl.scrollWidth,
+      imageTimeout: 0,
+      allowTaint: true,
+    });
 
-  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    // رسم اللوجو (وأي صور data:) يدويًا فوق الالتقاط في مواضعها الأصلية
+    if (imagePositions.length) {
+      const scale = canvas.width / contractEl.getBoundingClientRect().width;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        for (const p of imagePositions) {
+          const img = new Image();
+          img.src = p.src;
+          await new Promise((res, rej) => {
+            img.onload = () => res(undefined);
+            img.onerror = () => rej(new Error("logo draw failed"));
+          });
+          const ratio = Math.min(p.rect.width / p.naturalW, p.rect.height / p.naturalH);
+          const drawW = p.naturalW * ratio;
+          const drawH = p.naturalH * ratio;
+          const x = (p.rect.left + (p.rect.width - drawW) / 2) * scale;
+          const y = (p.rect.top + (p.rect.height - drawH) / 2) * scale;
+          // مسح المنطقة أولًا (في حال رسم html2canvas إطارًا فارغًا)
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(p.rect.left * scale, p.rect.top * scale, p.rect.width * scale, p.rect.height * scale);
+          ctx.drawImage(img, x, y, drawW * scale, drawH * scale);
+        }
+      }
+    }
 
-  const cssPxPerMm = canvas.width / A4_W_MM; // بيكسل لكل ملليمتر في العرض
-  const sliceH = Math.round(CONTENT_H_MM * cssPxPerMm);
+    const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
 
-  const totalSlices = Math.ceil(canvas.height / sliceH);
-  const pageContentW = CONTENT_W_MM;
-  const pageContentH = CONTENT_H_MM;
+    const cssPxPerMm = canvas.width / A4_W_MM; // بيكسل لكل ملليمتر في العرض
+    const sliceH = Math.round(CONTENT_H_MM * cssPxPerMm);
+    const breakPoints = collectBreakPoints(contractEl, cssPxPerMm);
 
-  const lang = contractEl.getAttribute("data-lang") ?? contractEl.lang ?? "ar";
-  const isArabic = lang !== "en";
+    const lang = contractEl.getAttribute("data-lang") ?? contractEl.lang ?? "ar";
+    const isArabic = lang !== "en";
 
-  for (let i = 0; i < totalSlices; i++) {
-    if (i > 0) doc.addPage();
+    const pageContentW = CONTENT_W_MM;
 
-    const y0 = i * sliceH;
-    const slice = document.createElement("canvas");
-    slice.width = canvas.width;
-    slice.height = Math.min(sliceH, canvas.height - y0);
-    const ctx = slice.getContext("2d");
-    if (!ctx) continue;
-    ctx.drawImage(canvas, 0, y0, canvas.width, slice.height, 0, 0, slice.width, slice.height);
+    let y0 = 0;
+    let first = true;
+    while (y0 < canvas.height) {
+      const remaining = canvas.height - y0;
+      const cutLimit = y0 + sliceH;
+      let cutAt: number;
+      if (remaining <= sliceH) {
+        cutAt = canvas.height;
+      } else {
+        cutAt = pickCutPoint(breakPoints, cutLimit, y0 + Math.round(sliceH * 0.55));
+      }
+      cutAt = Math.max(cutAt, y0 + Math.round(sliceH * 0.35)); // حد أدنى للتقدم
+      cutAt = Math.min(cutAt, y0 + sliceH);
 
-    // خانات التوقيع تتكرر أسفل كل صفحة من صفحات PDF
-    const sheet = drawSignatureBlock(slice, isArabic);
+      const sliceHeight = cutAt - y0;
+      const slice = document.createElement("canvas");
+      slice.width = canvas.width;
+      slice.height = sliceHeight;
+      const ctx = slice.getContext("2d");
+      if (ctx) ctx.drawImage(canvas, 0, y0, canvas.width, sliceHeight, 0, 0, slice.width, sliceHeight);
 
-    const imgData = sheet.toDataURL("image/jpeg", 0.92);
-    const imgH = (sheet.height / canvas.width) * pageContentW;
+      // خانات التوقيع تتكرر أسفل كل صفحة من صفحات PDF
+      const sheet = drawSignatureBlock(slice, isArabic);
 
-    doc.addImage(imgData, "JPEG", PAGE_MARGIN_MM.x, PAGE_MARGIN_MM.y, pageContentW, imgH);
-  }
+      if (!first) doc.addPage();
+      first = false;
 
-  doc.save("عقد_عمل.pdf");
+      const imgData = sheet.toDataURL("image/jpeg", 0.92);
+      const imgH = (sheet.height / canvas.width) * pageContentW;
+      doc.addImage(imgData, "JPEG", PAGE_MARGIN_MM.x, PAGE_MARGIN_MM.y, pageContentW, imgH);
+
+      y0 = cutAt;
+    }
+
+    doc.save("عقد_عمل.pdf");
   } finally {
-    // استعادة العناصر المخفية إلى حالتها الأصلية
+    // إعادة العناصر المخفية إلى حالتها الأصلية
     hiddenEls.forEach((el) => el.style.removeProperty("display"));
   }
 }
