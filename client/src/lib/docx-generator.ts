@@ -404,7 +404,7 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
     sections: [
       {
         properties: {
-          page: { margin: { top: 1200, right: 1200, bottom: 1400, left: 1200 } },
+          page: { margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 }, size: { width: 11906, height: 16838 } },
         } as never,
         headers: { default: d.language === "both" ? buildHeaderBoth(docTitle, docSubtitle, docTitleEn, docSubtitleEn) : buildHeader(d.language === "en" ? docTitleEn : docTitle, d.language === "en" ? docSubtitleEn : docSubtitle, d.language !== "en") },
         footers: { default: buildFooter(d) },
@@ -513,16 +513,8 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
                   para(txt),
                   ...(c.breakAfter ? [new Paragraph({ children: [new PageBreak()] })] : []),
                 ];
-              }).flat()),
-          new Paragraph({ children: [new PageBreak()] }),
-          para(
-            `حُرر هذا العقد في تاريخ ${d.contractDate ? dateArabic(d.contractDate) : ".........."}، من أربع نسخ أصلية، استلم كل من الطرفين نسخة، وأُودعت نسخة بمكتب التأمينات الاجتماعية المختصة، ونسخة بالجهة الإدارية المختصة.`,
-            "justify",
-            24,
-            true,
+              }).flat()
           ),
-          empty(120),
-          ...signaturesAr,
         ],
       },
     ],
