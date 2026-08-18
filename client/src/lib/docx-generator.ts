@@ -90,7 +90,7 @@ function paraEn(text: string, align: "left" | "center" | "justify" = "justify", 
     alignment: align === "justify" ? AlignmentType.JUSTIFIED : align === "center" ? AlignmentType.CENTER : AlignmentType.LEFT,
     indent: firstIndent ? { firstLine: 300 } : undefined,
     children: runs,
-    spacing: { after: 140, line: 300 },
+    spacing: { after: 120, line: 276 },
   });
 }
 
@@ -110,11 +110,11 @@ function para(text: string, align: "right" | "center" | "justify" = "justify", s
     indent: firstIndent ? { firstLine: 300 } : undefined,
     bidirectional: true,
     children: runs,
-    spacing: { after: 180, line: 340 },
+    spacing: { after: 120, line: 276 },
   });
 }
 
-function empty(spacing = 180): Paragraph {
+function empty(spacing = 100): Paragraph {
   return new Paragraph({ bidirectional: true, spacing: { after: spacing }, children: [] });
 }
 
@@ -122,7 +122,7 @@ function clauseHeadingEn(title: string): Paragraph {
   return new Paragraph({
     alignment: AlignmentType.LEFT,
     children: [new TextRun({ text: title, font: FONT_EN, size: 24, bold: true, sizeComplexScript: 24 })],
-    spacing: { before: 200, after: 100 },
+    spacing: { before: 160, after: 80 },
   });
 }
 
@@ -131,7 +131,7 @@ function clauseHeading(title: string): Paragraph {
     alignment: AlignmentType.RIGHT,
     bidirectional: true,
     children: [new TextRun({ text: title, font: FONT, size: 26, bold: true, rightToLeft: true, sizeComplexScript: 26 })],
-    spacing: { before: 240, after: 120 },
+    spacing: { before: 160, after: 80 },
   });
 }
 
@@ -364,7 +364,7 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
 
   /* ========================= التوقيعات النهائية ========================= */
   const signaturesAr: (Paragraph | Table)[] = [
-    empty(200),
+    empty(150),
     new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       rows: [
@@ -378,7 +378,7 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
     }),
   ];
   const signaturesEn: (Paragraph | Table)[] = [
-    empty(200),
+    empty(150),
     new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       rows: [
@@ -404,7 +404,7 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
     sections: [
       {
         properties: {
-          page: { margin: { top: 1200, right: 1200, bottom: 1700, left: 1200 } },
+          page: { margin: { top: 1200, right: 1200, bottom: 1400, left: 1200 } },
         } as never,
         headers: { default: d.language === "both" ? buildHeaderBoth(docTitle, docSubtitle, docTitleEn, docSubtitleEn) : buildHeader(d.language === "en" ? docTitleEn : docTitle, d.language === "en" ? docSubtitleEn : docSubtitle, d.language !== "en") },
         footers: { default: buildFooter(d) },
@@ -475,7 +475,7 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
                   new Paragraph({
                     alignment: AlignmentType.CENTER,
                     children: [new TextRun({ text: `البند (${arabicNumeral(c.number)}) — Clause (${c.number})`, font: FONT, size: 26, bold: true, rightToLeft: true, sizeComplexScript: 26 })],
-                    spacing: { before: 240, after: 120 },
+                    spacing: { before: 160, after: 80 },
                   }),
                   new Table({
                     width: { size: 100, type: WidthType.PERCENTAGE },

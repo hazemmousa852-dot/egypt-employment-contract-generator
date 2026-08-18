@@ -15,8 +15,8 @@ const A4_H_MM = 297;
 const MIN_LAST_PAGE_FILL = 0.35;
 /** هوامش الطباعة المطابقة لـ @page في index.css */
 const PAGE_MARGIN_MM = { x: 14, y: 12 };
-const FOTER_H_MM = 22; // ارتفاع فوتر التوقيعات أسفل كل صفحة
-const FOOTER_GAP_MM = 5; // هامش أبيض فاصل بين آخر المحتوى والفوتر
+const FOTER_H_MM = 26; // ارتفاع فوتر التوقيعات أسفل كل صفحة
+const FOOTER_GAP_MM = 8; // هامش أبيض فاصل بين آخر المحتوى والفوتر
 
 const CONTENT_W_MM = A4_W_MM - PAGE_MARGIN_MM.x * 2;
 const CONTENT_H_MM = A4_H_MM - PAGE_MARGIN_MM.y * 2 - FOTER_H_MM - FOOTER_GAP_MM;
@@ -86,6 +86,12 @@ function drawSignatureBlock(
  * يجلب إحداثيات Y السفلية لحدود الأقسام القابلة للانقسام
  * (أقسام البنود وأقسام الأطراف والملخص) نسبيًا إلى أعلى العنصر الملتقط.
  */
+/**
+ * يتحقق من أن الشريحة ليست فارغة: عيّنة من أعمدة البكسل عبر عرض الشريحة
+ * يجب ألا تكون كلها بيضاء نقية (أو شبه بيضاء تمامًا) وإلا فالصفحة الأخيرة
+ * معطوبة ويجب إيقاف الحلقة عندها.
+ */
+
 function collectBreakPoints(contractEl: HTMLElement, cssPxPerMm: number): number[] {
   const rect = contractEl.getBoundingClientRect();
   const points: number[] = [];
@@ -97,30 +103,30 @@ function collectBreakPoints(contractEl: HTMLElement, cssPxPerMm: number): number
 }
 
 /**
- * يختار موضع القطع الأقرب لنهاية بند دون تجاوز الحد الأقصى المسموح.
- * يستوعب البنود القصيرة المتتالية: إذا كانت النهاية التالية تقع ضمن هامش
- * صغير إضافي (لا يتجاوز 12% من ارتفاع المحتوى) فتمتد نقطة القطع إليها
- * لتجنب ترك فراغ كبير أعلى الصفحة التالية.
+ * نقاط القطع محسوبة من الالتقاط الفعلي (html2canvas) بدل DOM الأولي،
+ * لأن إخفاء عناصر no-print أثناء الالتقاط يغيّر الأبعاد الحقيقية.
  */
-function pickCutPoint(breakPoints: number[], maxCutY: number, minCutY: number, contentHeight: number): number {
-  const SHORT_CLAUSE_ALLOW = contentHeight * 0.12;
-  // أقرب نهاية بند لا تتجاوز الحد الأقصى
-  let best = -1;
-  for (const bp of breakPoints) {
-    if (bp <= maxCutY) best = bp;
-    else break;
-  }
-  // استيعاب بند قصير واحد تالٍ إن كان يترك فراغًا كبيرًا
-  if (best >= 0 && best < maxCutY) {
-    for (const bp of breakPoints) {
-      if (bp > maxCutY && bp <= maxCutY + SHORT_CLAUSE_ALLOW) best = bp;
-      else if (bp > maxCutY) break;
-    }
-  }
-  if (best >= minCutY) return best;
-  // إن لم توجد نهاية بند صالحة، اقطع عند الحد الأقصى (البنود الطويلة جدًا)
-  return maxCutY;
+function collectBreakPointsFromCanvas(
+  contractEl: HTMLElement,
+  canvas: HTMLCanvasElement,
+  cssPxPerMm: number,
+): number[] {
+  const points: number[] = [];
+  const scale = canvas.width / contractEl.getBoundingClientRect().width;
+  contractEl.querySelectorAll<HTMLElement>(".contract-clauses > div").forEach((sec) => {
+    const secRect = sec.getBoundingClientRect();
+    points.push(Math.round((secRect.bottom - contractEl.getBoundingClientRect().top) * scale));
+  });
+  return points.sort((a, b) => a - b);
 }
+
+/**
+ * يختار موضع القطع الأقرب لنهاية بند دون تجاوز الحد الأقصى المسموح.
+ * يتحقق أن الفوتر المرسوم أسفل الصفحة لن يغطي على بداية البند التالي:
+ * يجب أن يكون بين نقطة القطع وأقرب breakpoint تالٍ مسافة كافية لاستيعاب
+ * ارتفاع الفوتر + هامش الفاصل؛ وإلا تبقى منطقة بيضاء أعلى الصفحة التالية
+ * بدلًا من تغطية الفوتر على النص.
+ */
 
 /**
  * html2canvas-pro قد يفشل في رسم صور base64 (data:) بصمت بسبب crossOrigin،
@@ -198,28 +204,54 @@ export async function downloadContractPdf(contractEl: HTMLElement): Promise<void
 
     const cssPxPerMm = canvas.width / A4_W_MM; // بيكسل لكل ملليمتر في العرض
     const sliceH = Math.round(CONTENT_H_MM * cssPxPerMm);
-    const breakPoints = collectBreakPoints(contractEl, cssPxPerMm);
+    // نقاط القطع من الارتفاع الملتقط الفعلي (بعد إخفاء no-print) لا من DOM الأولي
+    const breakPoints = collectBreakPointsFromCanvas(contractEl, canvas, cssPxPerMm);
 
     const lang = contractEl.getAttribute("data-lang") ?? contractEl.lang ?? "ar";
     const isArabic = lang !== "en";
 
     const pageContentW = CONTENT_W_MM;
 
+    // ارتفاع الفوتر المحجوز أسفل كل صفحة (بيكسل) — البنود الطويلة تُقطع فقط إذا لم
+    // يكن البند التالي يبدأ داخل هذه المنطقة، وإلا نمد الشريحة لنقطة نهاية البند.
+    const footerReservePx = Math.round((FOTER_H_MM + FOOTER_GAP_MM) * cssPxPerMm);
+
     let y0 = 0;
     let first = true;
     while (y0 < canvas.height) {
       const remaining = canvas.height - y0;
-      const cutLimit = y0 + sliceH;
       let cutAt: number;
       if (remaining <= sliceH) {
         cutAt = canvas.height;
       } else {
-        cutAt = pickCutPoint(breakPoints, cutLimit, y0 + Math.round(sliceH * 0.55), sliceH);
+        // أقرب نهاية بند لا تتجاوز y0 + sliceH (حد أقصى)
+        let best = -1;
+        for (const bp of breakPoints) {
+          if (bp <= y0 + sliceH) best = bp;
+          else break;
+        }
+        if (best > y0 + sliceH * 0.5) {
+          // نهاية بند صالحة: نتأكد أن البند التالي لا يبدأ داخل منطقة الفوتر
+          let nextStart = -1;
+          for (const bp of breakPoints) {
+            if (bp > best) { nextStart = bp; break; }
+          }
+          if (nextStart >= 0 && nextStart < best + footerReservePx) {
+            // البند التالي ضيق — نمد الشريحة إلى نهاية البند التالي (بشرط ألا تتجاوز الحد)
+            cutAt = nextStart <= y0 + sliceH + Math.round(sliceH * 0.35) ? nextStart : best;
+          } else {
+            cutAt = best;
+          }
+        } else {
+          // لا نهاية بند قريبة: اقطع عند الحد الأقصى (بند طويل) — الفوتر يُرسم تحت القطعة
+          cutAt = y0 + sliceH;
+        }
       }
-      cutAt = Math.max(cutAt, y0 + Math.round(sliceH * 0.35)); // حد أدنى للتقدم
-      cutAt = Math.min(cutAt, y0 + sliceH);
+      cutAt = Math.min(cutAt, canvas.height);
 
       const sliceHeight = cutAt - y0;
+      if (sliceHeight <= 0) break;
+
       const slice = document.createElement("canvas");
       slice.width = canvas.width;
       slice.height = sliceHeight;
@@ -236,17 +268,14 @@ export async function downloadContractPdf(contractEl: HTMLElement): Promise<void
       const imgH = (sheet.height / canvas.width) * pageContentW;
       // الشريحة (المحتوى) تُوضع أعلى الصفحة مباشرة؛ الفوتر المرسوم ضمن sheet
       // يظهر بعدها مباشرة — لا توسيط عمودي لتجنب الفراغات
-      doc.addImage(imgData, "JPEG", PAGE_MARGIN_MM.x, PAGE_MARGIN_MM.y, pageContentW, imgH);
-
-      if (cutAt >= canvas.height) {
-        // الصفحة الأخيرة: لا حاجة للتقدم
-      }
+      if (imgH > 0) doc.addImage(imgData, "JPEG", PAGE_MARGIN_MM.x, PAGE_MARGIN_MM.y, pageContentW, imgH);
 
       y0 = cutAt;
     }
 
     const workerName = (contractEl.getAttribute("data-worker-name") || "عقد_عمل").trim();
-    const safe = workerName.replace(/[^a-zA-Z0-9_\- \u0600-\u06FF]/g, "").trim();
+    // تنظيف الاسم: نُبقي الحروف العربية واللاتينية والرقمية والمسافات والشرطة والواصلة
+    const safe = workerName.replace(/[^a-zA-Z\u0600-\u06FF0-9_\- ]/g, "").trim();
     doc.save(`${safe || "عقد_عمل"}.pdf`);
   } finally {
     // إعادة العناصر المخفية إلى حالتها الأصلية
