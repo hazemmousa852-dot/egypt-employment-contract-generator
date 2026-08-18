@@ -300,8 +300,17 @@ function buildHeaderBoth(titleAr: string, subtitleAr: string, titleEn: string, s
 }
 
 /* ========================= المولد الرئيسي ========================= */
-export async function generateContractDocx(d: ContractData): Promise<Blob> {
+export async function generateContractDocx(d: ContractData, overrides?: Record<number, { ar?: string; en?: string }>): Promise<Blob> {
   const clauses = buildClauses(d);
+  // تطبيق التعديلات اليدوية على النصوص (من ContractDocument.tsx — ClauseOverrides)
+  for (const c of clauses) {
+    if (overrides?.[c.number]?.ar) c.text = overrides[c.number].ar!;
+  }
+  // تعديلات النصوص الإنجليزية (تُستخدم في وضع both)
+  const enOverrides: Record<number, string> = {};
+  for (const [num, ov] of Object.entries(overrides ?? {})) {
+    if (ov.en) enOverrides[Number(num)] = ov.en;
+  }
   const endDateObj = d.type === "training"
     ? contractEndDate(d.work.startDate, 0, d.trainingDurationMonths ?? 0)
     : contractEndDate(d.work.startDate, d.durationYears ?? 0, d.durationMonths ?? 0);
@@ -470,7 +479,7 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
                   const parts = m.replace("م", "").split(/\s*\/\s*/);
                   return arabicNumeral(`${parts[0]}/${parts[1]}/${parts[2]}م`);
                 });
-                const txtEn = en ? en.text.replace(/\*\*(.+?)\*\*/g, "$1").replace(/<span[^>]*>/g, "").replace(/<\/span>/g, "") : "";
+                const txtEn = (enOverrides[c.number] ?? en?.text ?? "").replace(/\*\*(.+?)\*\*/g, "$1").replace(/<span[^>]*>/g, "").replace(/<\/span>/g, "");
                 return [
                   new Paragraph({
                     alignment: AlignmentType.CENTER,
@@ -564,8 +573,8 @@ async function injectRtlSection(blob: Blob): Promise<Blob> {
   return new Blob([zipped], { type: blob.type });
 }
 
-export async function downloadContractDocx(d: ContractData, filename?: string): Promise<void> {
-  const blob = await generateContractDocx(d);
+export async function downloadContractDocx(d: ContractData, overrides?: Record<number, { ar?: string; en?: string }>, filename?: string): Promise<void> {
+  const blob = await generateContractDocx(d, overrides);
   const isTraining = d.type === "training";
   const isConsultant = d.type === "consultant";
   const kind = isTraining ? "تدريب" : isConsultant ? "استشارات" : "عمل";

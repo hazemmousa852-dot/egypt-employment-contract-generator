@@ -5,6 +5,8 @@
  * ألوان: عاجي ورقي، حبر كحلي، أحمر ختم، ذهبي عتيق. خطوط: Amiri + Cairo.
  */
 import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import type { ClauseOverrides } from "@/components/ContractDocument";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MemoryStick } from "lucide-react";
 
@@ -66,6 +68,23 @@ export default function Home() {
   const [showContract, setShowContract] = useState(false);
   const [showPrint, setShowPrint] = useState(false);
 
+  /* ===== تحرير نصوص البنود يدويًا ===== */
+  const [overrides, setOverrides] = useState<ClauseOverrides>({});
+  const [editTarget, setEditTarget] = useState<{ number: number; kind: "ar" | "en"; current: string } | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+
+  const handleEditClause = (number: number, kind: "ar" | "en", current: string) => {
+    setEditTarget({ number, kind, current });
+    setEditDraft(current);
+  };
+  const handleSaveEdit = () => {
+    if (!editTarget) return;
+    setOverrides((prev) => ({ ...prev, [editTarget.number]: { ...prev[editTarget.number], [editTarget.kind]: editDraft.trim() || undefined } }));
+    setEditTarget(null);
+    toast.success("تم حفظ تعديل البند — سيظهر في المعاينة والطباعة وملفي PDF وWord");
+  };
+  const anyOverride = Object.keys(overrides).length > 0;
+
   // الحفظ التلقائي الاختياري: يُحفظ عند أي تعديل فقط إذا فعّل المستخدم الخيار
   useEffect(() => {
     try {
@@ -116,7 +135,7 @@ export default function Home() {
     if (!data.employee.name && !data.employer.name) { toast.error("اضغط أولًا على زر «حرّر العقد» لتوليد المسودة — تأكد من إدخال اسم صاحب العمل والعامل"); return; }
     try {
       toast.info("جارٍ إعداد ملف Word...");
-      await downloadContractDocx(data);
+      await downloadContractDocx(data, overrides);
       toast.success("تم تحميل ملف Word");
     } catch {
       toast.error("تعذر إنشاء ملف Word — جرّب خيار تحميل PDF بدلًا من ذلك");
@@ -273,7 +292,18 @@ export default function Home() {
             <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
               <div>
                 <h3 className="font-display text-2xl font-bold">مسودة العقد</h3>
-                <p className="text-sm text-muted-foreground mt-1">راجع البنود؛ فإن سلمت، اطبع العقد كاملًا بالنسخ الأربع المطلوبة قانونًا.</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  راجع البنود؛ فإن سلمت، اطبع العقد كاملًا بالنسخ الأربع المطلوبة قانونًا. يمكنك النقر على زر «تحرير» في أي بند لتعديل نصه يدويًا.
+                </p>
+                {anyOverride && (
+                  <button
+                    type="button"
+                    onClick={() => { setOverrides({}); toast.info("عادت كل النصوص إلى صيغتها الافتراضية"); }}
+                    className="mt-1.5 text-xs text-[#8B2635] underline underline-offset-2 hover:text-[#b3892f]"
+                  >
+                    إعادة جميع البنود إلى النص الافتراضي
+                  </button>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={handleDownloadPdf} size="lg" className="gap-2 font-display text-base rounded-[3px] bg-white">
@@ -287,8 +317,8 @@ export default function Home() {
                 </Button>
               </div>
             </div>
-            <div className="rounded-[3px] overflow-hidden border border-border">
-              <ContractDocument data={data} />
+              <div className="rounded-[3px] overflow-hidden border border-border">
+              <ContractDocument data={data} overrides={overrides} onEditClause={handleEditClause} />
             </div>
             <p className="mt-4 flex items-start gap-2 text-xs text-muted-foreground bg-[var(--secondary)] rounded-md p-3 border border-[var(--gold)]/30">
               <AlertTriangle size={14} className="text-[var(--gold)] shrink-0 mt-0.5" />
@@ -313,9 +343,43 @@ export default function Home() {
       {/* ===== منطقة الطباعة (A4) ===== */}
       {showPrint && (
         <div className="print-only">
-          <ContractDocument data={data} forPrint />
+          <ContractDocument data={data} forPrint overrides={overrides} onEditClause={handleEditClause} />
         </div>
       )}
+
+      {/* مربع حوار تحرير نص البند */}
+      <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
+        <DialogContent dir="rtl" className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              تحرير نص البند ({editTarget?.kind === "ar" ? editTarget.number : ""})
+              {editTarget?.kind === "en" && editTarget.number ? `Clause (${editTarget.number})` : ""}
+            </DialogTitle>
+            <DialogDescription>
+              عدّل النص كما تشاء — سيظهر التعديل في المعاينة والطباعة وملفي PDF وWord. اتركه فارغًا لحذف النص.
+            </DialogDescription>
+          </DialogHeader>
+          <textarea
+            value={editDraft}
+            onChange={(e) => setEditDraft(e.target.value)}
+            dir={editTarget?.kind === "ar" ? "rtl" : "ltr"}
+            className="w-full min-h-44 rounded-md border border-border bg-background p-3 text-[13pt] leading-[1.9] font-display focus:outline-none focus:ring-2 focus:ring-[#8B2635]/40"
+          />
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => { setEditDraft(editTarget?.current ?? ""); }}
+              className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+            >
+              استعادة النص الأصلي
+            </button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setEditTarget(null)}>إلغاء</Button>
+              <Button size="sm" onClick={handleSaveEdit}>حفظ التعديل</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

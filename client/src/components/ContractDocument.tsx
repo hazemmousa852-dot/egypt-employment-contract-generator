@@ -10,9 +10,15 @@ import { buildClauses } from "@/lib/clauses";
 import { buildEnClausesFor, party2LabelEn } from "@/lib/clauses-en";
 import React from "react";
 
+/** تعديلات يدوية على نصوص البنود — يحرّرها المستخدم من المعاينة قبل الطباعة.
+ *  المفتاح: رقم البند. يُطبق النص المعدل بدل النص الافتراضي في كل مكان (معاينة/طباعة/PDF/Word). */
+export type ClauseOverrides = Record<number, { ar?: string; en?: string }>;
+
 interface Props {
   data: ContractData;
   forPrint?: boolean; // true => تُعرض داخل منطقة @media print
+  overrides?: ClauseOverrides;
+  onEditClause?: (clauseNumber: number, kind: "ar" | "en", current: string) => void;
 }
 
 /** تحويل **نص** إلى <strong> (نسخة نص آمن فقط بدون spans — النسخة العربية تحافظ على spans التواريخ) */
@@ -32,6 +38,60 @@ function renderClauseText(text: string, keepSpans = false): React.ReactNode {
     }
     return part;
   });
+}
+
+/* ---------- مساعدة: النص المعدل مع data attribute — أيقونة القلم تُخفى عند الطباعة/التصدير (no-print) ---------- */
+function EditableClause({
+  forPrint,
+  overrides,
+  onEditClause,
+  number,
+  kind,
+  text,
+  title,
+  articleRef,
+  classNameHeading,
+  classNameText,
+  labelPrefix,
+}: {
+  forPrint?: boolean;
+  overrides?: ClauseOverrides;
+  onEditClause?: (n: number, kind: "ar" | "en", current: string) => void;
+  number: number;
+  kind: "ar" | "en";
+  text: string;
+  title: string;
+  articleRef?: string;
+  classNameHeading: string;
+  classNameText: string;
+  labelPrefix: string;
+}) {
+  const ov = overrides?.[number]?.[kind];
+  const display = ov ?? text;
+  const num = kind === "ar" ? arabicNumeral(number) : String(number);
+  return (
+    <div>
+      <h2 className={classNameHeading}>
+        {labelPrefix} ({num}): {title}
+        {articleRef ? <span className="text-xs text-[#8B2635] font-normal mr-2">— {articleRef}</span> : null}
+        {forPrint ? null : onEditClause ? (
+          <button
+            type="button"
+            className="no-print inline-flex items-center gap-1 mr-2 align-middle rounded border border-[#b3892f]/50 bg-white px-1.5 py-0.5 text-[10pt] text-[#8B2635] hover:bg-[#8B2635] hover:text-white transition-colors"
+            title={`تحرير ${kind === "ar" ? "النص العربي" : "النص الإنجليزي"} لهذا البند`}
+            onClick={() => onEditClause(number, kind, ov ?? text)}
+            aria-label={`تحرير البند ${num}`}
+          >
+            ✎ {kind === "ar" ? "تحرير" : "Edit"}
+            {ov ? <span className="text-[8pt]">(معدّل)</span> : null}
+          </button>
+        ) : null}
+      </h2>
+      <p className={classNameText} data-clause-override={number}>
+        {renderClauseText(display, kind === "ar")}
+      </p>
+    </div>
+  );
 }
 
 /* ---------- ترجمة عناصر UI ---------- */
@@ -130,7 +190,7 @@ function LogoBlock({ data }: { data: ContractData }) {
 /* ==================================================================
    المكوّن العربي
    ================================================================== */
-function ArabicSide({ data }: { data: ContractData }) {
+function ArabicSide({ data, forPrint, overrides, onEditClause }: { data: ContractData; forPrint?: boolean; overrides?: ClauseOverrides; onEditClause?: Props["onEditClause"] }) {
   const clauses = buildClauses(data);
   const eo = endDateInfo(data).endDateObj; const endDate = eo ? dateArabicShort(eo.toISOString().slice(0, 10)) : "";
   const party2Label_ = party2Label(data);
@@ -193,13 +253,20 @@ function ArabicSide({ data }: { data: ContractData }) {
       {/* البنود التفصيلية */}
       <div className="contract-clauses space-y-2">
         {clauses.map((c) => (
-          <div key={c.number}>
-            <h2 className="font-bold text-base mb-0.5">
-              البند ({arabicNumeral(c.number)}): {c.title}
-              {c.articleRef ? <span className="text-xs text-[#8B2635] font-normal mr-2">— {c.articleRef}</span> : null}
-            </h2>
-            <p className="text-[13pt] leading-[1.95] whitespace-pre-line">{renderClauseText(c.text, true)}</p>
-          </div>
+          <EditableClause
+            key={c.number}
+            forPrint={forPrint}
+            overrides={overrides}
+            onEditClause={onEditClause}
+            number={c.number}
+            kind="ar"
+            text={c.text}
+            title={c.title}
+            articleRef={c.articleRef}
+            classNameHeading="font-bold text-base mb-0.5"
+            classNameText="text-[13pt] leading-[1.95] whitespace-pre-line"
+            labelPrefix="البند"
+          />
         ))}
       </div>
 
@@ -242,7 +309,7 @@ function ArabicSide({ data }: { data: ContractData }) {
 /* ==================================================================
    المكوّن الإنجليزي
    ================================================================== */
-function EnglishSide({ data }: { data: ContractData }) {
+function EnglishSide({ data, forPrint, overrides, onEditClause }: { data: ContractData; forPrint?: boolean; overrides?: ClauseOverrides; onEditClause?: Props["onEditClause"] }) {
   const clauses = buildEnClausesFor(data);
   const eo = endDateInfo(data).endDateObj; const endDate = eo ? fmtShort(eo.toISOString().slice(0, 10)) : "";
   const p2 = party2LabelEn(data);
@@ -303,13 +370,20 @@ function EnglishSide({ data }: { data: ContractData }) {
       {/* البنود */}
       <div className="space-y-3">
         {clauses.map((c) => (
-          <div key={c.number}>
-            <h2 className="font-bold text-sm mb-0.5">
-              Clause ({c.number}): {c.title}
-              {c.articleRef ? <span className="text-xs text-[#8B2635] font-normal ml-2">— {c.articleRef}</span> : null}
-            </h2>
-            <p className="text-[11pt] leading-[1.9] whitespace-pre-line">{renderClauseText(c.text)}</p>
-          </div>
+          <EditableClause
+            key={c.number}
+            forPrint={forPrint}
+            overrides={overrides}
+            onEditClause={onEditClause}
+            number={c.number}
+            kind="en"
+            text={c.text}
+            title={c.title}
+            articleRef={c.articleRef}
+            classNameHeading="font-bold text-sm mb-0.5"
+            classNameText="text-[11pt] leading-[1.9] whitespace-pre-line"
+            labelPrefix="Clause"
+          />
         ))}
       </div>
 
@@ -337,13 +411,13 @@ function EnglishSide({ data }: { data: ContractData }) {
 /* ==================================================================
    المكوّن الرئيسي
    ================================================================== */
-function ContractBody({ data }: { data: ContractData }) {
+function ContractBody({ data, forPrint, overrides, onEditClause }: { data: ContractData; forPrint?: boolean; overrides?: ClauseOverrides; onEditClause?: Props["onEditClause"] }) {
   const lang = data.language ?? "ar";
   const workerName = data.employee.name || "عقد_عمل";
   if (lang === "en") {
     return (
       <div className="contract-page" data-lang="en" data-worker-name={workerName} lang="en">
-        <EnglishSide data={data} />
+        <EnglishSide data={data} forPrint={forPrint} overrides={overrides} onEditClause={onEditClause} />
       </div>
     );
   }
@@ -351,27 +425,27 @@ function ContractBody({ data }: { data: ContractData }) {
     return (
       <div className="contract-page contract-page-both" data-lang="both" data-worker-name={workerName}>
         <div className="grid grid-cols-2 gap-4 items-start">
-          <div className="border-l border-border pl-3">{<ArabicSide data={data} />}</div>
-          <div className="border-r border-border pr-3">{<EnglishSide data={data} />}</div>
+          <div className="border-l border-border pl-3">{<ArabicSide data={data} forPrint={forPrint} overrides={overrides} onEditClause={onEditClause} />}</div>
+          <div className="border-r border-border pr-3">{<EnglishSide data={data} forPrint={forPrint} overrides={overrides} onEditClause={onEditClause} />}</div>
         </div>
       </div>
     );
   }
   return (
     <div className="contract-page" data-lang="ar" data-worker-name={workerName}>
-      <ArabicSide data={data} />
+      <ArabicSide data={data} forPrint={forPrint} overrides={overrides} onEditClause={onEditClause} />
     </div>
   );
 }
 
-export default function ContractDocument({ data, forPrint = false }: Props) {
+export default function ContractDocument({ data, forPrint = false, overrides, onEditClause }: Props) {
   if (forPrint) {
-    return <ContractBody data={data} />;
+    return <ContractBody data={data} forPrint={forPrint} overrides={overrides} onEditClause={onEditClause} />;
   }
   return (
     <div className="w-full overflow-x-auto">
       <div className="w-[210mm] mx-auto shadow-2xl">
-        <ContractBody data={data} />
+        <ContractBody data={data} overrides={overrides} onEditClause={onEditClause} />
       </div>
     </div>
   );
