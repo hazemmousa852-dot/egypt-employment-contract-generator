@@ -15,10 +15,11 @@ const A4_H_MM = 297;
 const MIN_LAST_PAGE_FILL = 0.35;
 /** هوامش الطباعة المطابقة لـ @page في index.css */
 const PAGE_MARGIN_MM = { x: 14, y: 12 };
-const FOTER_H_MM = 26; // ارتفاع فوتر التوقيعات أسفل كل صفحة
+const FOTER_H_MM = 22; // ارتفاع فوتر التوقيعات أسفل كل صفحة
+const FOOTER_GAP_MM = 5; // هامش أبيض فاصل بين آخر المحتوى والفوتر
 
 const CONTENT_W_MM = A4_W_MM - PAGE_MARGIN_MM.x * 2;
-const CONTENT_H_MM = A4_H_MM - PAGE_MARGIN_MM.y * 2 - FOTER_H_MM;
+const CONTENT_H_MM = A4_H_MM - PAGE_MARGIN_MM.y * 2 - FOTER_H_MM - FOOTER_GAP_MM;
 
 /**
  * يرسم خانات توقيع الطرفين أسفل شريحة الصفحة على لوحة canvas.
@@ -88,9 +89,7 @@ function drawSignatureBlock(
 function collectBreakPoints(contractEl: HTMLElement, cssPxPerMm: number): number[] {
   const rect = contractEl.getBoundingClientRect();
   const points: number[] = [];
-  contractEl.querySelectorAll<HTMLElement>(
-    ".contract-clauses > div, .contract-signatures, .contract-footnote",
-  ).forEach((sec) => {
+  contractEl.querySelectorAll<HTMLElement>(".contract-clauses > div").forEach((sec) => {
     const secRect = sec.getBoundingClientRect();
     points.push((secRect.bottom - rect.top) * cssPxPerMm);
   });
@@ -235,12 +234,20 @@ export async function downloadContractPdf(contractEl: HTMLElement): Promise<void
 
       const imgData = sheet.toDataURL("image/jpeg", 0.92);
       const imgH = (sheet.height / canvas.width) * pageContentW;
+      // الشريحة (المحتوى) تُوضع أعلى الصفحة مباشرة؛ الفوتر المرسوم ضمن sheet
+      // يظهر بعدها مباشرة — لا توسيط عمودي لتجنب الفراغات
       doc.addImage(imgData, "JPEG", PAGE_MARGIN_MM.x, PAGE_MARGIN_MM.y, pageContentW, imgH);
+
+      if (cutAt >= canvas.height) {
+        // الصفحة الأخيرة: لا حاجة للتقدم
+      }
 
       y0 = cutAt;
     }
 
-    doc.save("عقد_عمل.pdf");
+    const workerName = (contractEl.getAttribute("data-worker-name") || "عقد_عمل").trim();
+    const safe = workerName.replace(/[^a-zA-Z0-9_\- \u0600-\u06FF]/g, "").trim();
+    doc.save(`${safe || "عقد_عمل"}.pdf`);
   } finally {
     // إعادة العناصر المخفية إلى حالتها الأصلية
     hiddenEls.forEach((el) => el.style.removeProperty("display"));

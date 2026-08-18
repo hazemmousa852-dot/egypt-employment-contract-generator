@@ -21,3 +21,27 @@
 ## المرحلة 4: النشر
 - [ ] checkpoint → push main → deploy4.sh (gh-pages) → Vercel
 - [ ] إبلاغ المستخدم بالروابط
+
+
+# TODO — إصلاحات الدورة الجديدة (شكاوى المستخدم الأخيرة)
+
+## 1. الفراغات الكبيرة في العقد (PDF والطباعة)
+- [ ] تقليل line-height البند من leading-[2.1] إلى leading-[1.95] في ContractDocument.tsx (سطر ~201)
+- [ ] تقليل space-y-3 إلى space-y-2 في .contract-clauses
+- [ ] تقليل FOTER_H_MM من 26 إلى 20 في pdf.ts وزيادة CONTENT_H_MM تبعًا
+- [ ] تقليل هامش mt-8 في contract-footnote إلى mt-4
+
+## 2. تداخل/تغطية التوقيعات على آخر البنود + تكرار بلوك التوقيعات في الطباعة
+- [ ] في pdf.ts: ترك هامش أبيض 5mm بين آخر محتوى والفوتر (تقليل CONTENT_H_MM بـ5mm إضافية)
+- [ ] حل تكرار بلوك التوقيعات: في @media print إخفاء .contract-signatures (البلوك في المتن) كليًا display:none، وإنشاء فوتر ثابت عبر position: fixed; bottom: 0 داخل media print يتكرر أسفل كل صفحة تلقائيًا
+- [ ] في pdf.ts: إخفاء contract-footnote من PDF (يتكرر في آخر صفحة بشكل مزدوج) + إخفاء بلوك التوقيعات الختامي (no-print موجود)
+
+## 3. Word بدون لوجو نهائيًا
+- [ ] في docx-generator.ts: buildHeader بدون لوجو — العنوان فقط
+
+## 4. اسم ملف PDF باسم صاحب العقد
+- [ ] في pdf.ts: doc.save(`عقد_عمل_${employeeName}.pdf`) — تمرير اسم العامل من downloadContractPdf (قراءته من DOM أو data attribute)
+
+## 5. التحقق الميداني
+- [ ] اختبار المعاينة + طباعة + PDF + Word في المتصفح
+- [ ] حفظ checkpoint ثم التسليم

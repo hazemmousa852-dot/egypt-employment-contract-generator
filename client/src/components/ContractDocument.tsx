@@ -191,21 +191,35 @@ function ArabicSide({ data }: { data: ContractData }) {
       </div>
 
       {/* البنود التفصيلية */}
-      <div className="contract-clauses space-y-3">
+      <div className="contract-clauses space-y-2">
         {clauses.map((c) => (
           <div key={c.number}>
             <h2 className="font-bold text-base mb-0.5">
               البند ({arabicNumeral(c.number)}): {c.title}
               {c.articleRef ? <span className="text-xs text-[#8B2635] font-normal mr-2">— {c.articleRef}</span> : null}
             </h2>
-            <p className="text-[13pt] leading-[2.1] whitespace-pre-line">{renderClauseText(c.text, true)}</p>
+            <p className="text-[13pt] leading-[1.95] whitespace-pre-line">{renderClauseText(c.text, true)}</p>
           </div>
         ))}
       </div>
 
-      <p className="contract-footnote text-[10pt] text-muted-foreground mt-8 pt-3 border-t border-dashed border-border">
+      <p className="contract-footnote no-print text-[10pt] text-muted-foreground mt-5 pt-2 border-t border-dashed border-border">
         حُرر هذا العقد في تاريخ {dateArabic(data.contractDate)} ميلاديًا، وطُبع من هذا النموذج نسخة للطرف الأول ونسخة للطرف الثاني ونسخة بمكتب التأمينات الاجتماعية المختص ونسخة بالجهة الإدارية المختصة.
       </p>
+
+      {/* فوتر توقيعات ثابت: يظهر أسفل كل صفحة في الطباعة وPDF، مخفي في المعاينة */}
+      <div className="contract-page-footer-sig no-print" dir="rtl">
+        <div>
+          <p className="font-bold text-sm mb-4">الطرف الأول — صاحب العمل</p>
+          <p className="text-sm">الاسم: ..............................</p>
+          <p className="text-sm">التوقيع: ..............................</p>
+        </div>
+        <div>
+          <p className="font-bold text-sm mb-4">الطرف الثاني — {party2Label_}</p>
+          <p className="text-sm">الاسم: ..............................</p>
+          <p className="text-sm">التوقيع: ..............................</p>
+        </div>
+      </div>
 
       {/* التوقيعات: تُعرض في المعاينة الإلكترونية فقط؛
           عند الطباعة/تصدير PDF يُطبع بلوك التوقيعات كفوتر ثابت أسفل كل صفحة عبر pdf.ts */}
@@ -325,16 +339,17 @@ function EnglishSide({ data }: { data: ContractData }) {
    ================================================================== */
 function ContractBody({ data }: { data: ContractData }) {
   const lang = data.language ?? "ar";
+  const workerName = data.employee.name || "عقد_عمل";
   if (lang === "en") {
     return (
-      <div className="contract-page" data-lang="en" lang="en">
+      <div className="contract-page" data-lang="en" data-worker-name={workerName} lang="en">
         <EnglishSide data={data} />
       </div>
     );
   }
   if (lang === "both") {
     return (
-      <div className="contract-page contract-page-both" data-lang="both">
+      <div className="contract-page contract-page-both" data-lang="both" data-worker-name={workerName}>
         <div className="grid grid-cols-2 gap-4 items-start">
           <div className="border-l border-border pl-3">{<ArabicSide data={data} />}</div>
           <div className="border-r border-border pr-3">{<EnglishSide data={data} />}</div>
@@ -343,7 +358,7 @@ function ContractBody({ data }: { data: ContractData }) {
     );
   }
   return (
-    <div className="contract-page" data-lang="ar">
+    <div className="contract-page" data-lang="ar" data-worker-name={workerName}>
       <ArabicSide data={data} />
     </div>
   );

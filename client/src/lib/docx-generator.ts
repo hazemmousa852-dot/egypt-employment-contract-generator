@@ -56,37 +56,6 @@ function salaryWordsEn(n: number): string {
   return out || "zero";
 }
 
-/* ========================= أبعاد اللوجو ========================= */
-// التحقق الصارم من توقيع PNG قبل قراءة أبعاد IHDR — إذا كانت الصورة
-// من أي نوع آخر (JPEG/WebP) أو ترويسة معطوبة فلا نحاول الاستنتاج
-function readLogoDimensions(bytes: Uint8Array): { width: number; height: number } | null {
-  const PNG_SIG = [137, 80, 78, 71, 13, 10, 26, 10];
-  for (let i = 0; i < 8; i++) if (bytes[i] !== PNG_SIG[i]) return null;
-  const w = (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19];
-  const h = (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23];
-  if (!Number.isInteger(w) || !Number.isInteger(h) || w <= 0 || h <= 0 || w > 100000 || h > 100000) return null;
-  const MAX_W_EMU = 3429;
-  const MAX_H_EMU = 1905;
-  let emuW = Math.round((MAX_H_EMU * w) / h);
-  let emuH = MAX_H_EMU;
-  if (emuW > MAX_W_EMU) { emuW = MAX_W_EMU; emuH = Math.round((MAX_W_EMU * h) / w); }
-  return { width: Math.max(500, Math.min(emuW, MAX_W_EMU)), height: Math.max(500, Math.min(emuH, MAX_H_EMU)) };
-}
-
-/* ========================= تحويل اللوجو ========================= */
-function dataUrlToArray(dataUrl?: string): Uint8Array | null {
-  if (!dataUrl) return null;
-  try {
-    const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
-    const binary = typeof atob === "undefined" ? "" : atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return bytes;
-  } catch {
-    return null;
-  }
-}
-
 /* ========================= التواريخ الشرقية ========================= */
 function dateArabicEastern(date: Date | string): string {
   if (!date) return "..........";
@@ -238,23 +207,11 @@ function buildFooter(d: ContractData): Footer {
 }
 
 /* ========================= الترويسة: اللوجو ========================= */
-function buildHeader(logoArray: Uint8Array | null, logoEmu: { width: number; height: number } | null, title: string, subtitle: string, rtl = true): Header {
+function buildHeader(title: string, subtitle: string, rtl = true): Header {
   const font = rtl ? FONT : FONT_EN;
-  const logoPara = logoArray
-    ? new Paragraph({
-        bidirectional: true,
-        alignment: AlignmentType.CENTER,
-        spacing: { after: 100 },
-        children: [
-          new ImageRun({ data: logoArray, transformation: { width: logoEmu?.width ?? 1440, height: logoEmu?.height ?? 810 }, type: "png" }),
-        ],
-      })
-    : null;
-
   if (rtl) {
     return new Header({
       children: [
-        ...(logoPara ? [logoPara] : []),
         new Paragraph({
           bidirectional: true,
           alignment: AlignmentType.CENTER,
@@ -284,7 +241,6 @@ function buildHeader(logoArray: Uint8Array | null, logoEmu: { width: number; hei
 
   return new Header({
     children: [
-      ...(logoPara ? [logoPara] : []),
       new Paragraph({
         alignment: AlignmentType.CENTER,
         spacing: { after: 60 },
@@ -304,19 +260,9 @@ function buildHeader(logoArray: Uint8Array | null, logoEmu: { width: number; hei
 }
 
 /* ========================= ترويسة ثنائية اللغة (صف عربي + صف إنجليزي) ========================= */
-function buildHeaderBoth(logoArray: Uint8Array | null, logoEmu: { width: number; height: number } | null, titleAr: string, subtitleAr: string, titleEn: string, subtitleEn: string): Header {
+function buildHeaderBoth(titleAr: string, subtitleAr: string, titleEn: string, subtitleEn: string): Header {
   return new Header({
     children: [
-      ...(logoArray
-        ? [
-            new Paragraph({
-              bidirectional: true,
-              alignment: AlignmentType.CENTER,
-              spacing: { after: 100 },
-              children: [new ImageRun({ data: logoArray, transformation: { width: logoEmu?.width ?? 1440, height: logoEmu?.height ?? 810 }, type: "png" })],
-            }),
-          ]
-        : []),
       new Paragraph({
         bidirectional: true,
         alignment: AlignmentType.CENTER,
@@ -360,14 +306,6 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
     ? contractEndDate(d.work.startDate, 0, d.trainingDurationMonths ?? 0)
     : contractEndDate(d.work.startDate, d.durationYears ?? 0, d.durationMonths ?? 0);
   const endDateIso = endDateObj ? endDateObj.toISOString().slice(0, 10) : null;
-  const logoArray = dataUrlToArray(d.logo);
-  // قراءة أبعاد اللوجو الأصلية لضبط النسبة دون تشويه (PNG فقط عبر ترويسة IHDR)
-  const MAX_W_EMU = 3429; // 3.6 سم عرضًا كحد أقصى للترويسة
-  const MAX_H_EMU = 1905; // 2 سم ارتفاعًا كحد أقصى
-  const DEFAULT_EMU = { width: 3429, height: 1905 }; // الأبعاد الآمنة القصوى
-  let logoEmu: { width: number; height: number } | null = logoArray && logoArray.length > 24 ? readLogoDimensions(logoArray) : null;
-  if (!logoEmu) logoEmu = DEFAULT_EMU;
-
   const isTraining = d.type === "training";
   const isConsultant = d.type === "consultant";
   const party2Label = isTraining ? "المتدرب" : isConsultant ? "الاستشاري" : "العامل";
@@ -468,7 +406,7 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
         properties: {
           page: { margin: { top: 1200, right: 1200, bottom: 1700, left: 1200 } },
         } as never,
-        headers: { default: d.language === "both" ? buildHeaderBoth(logoArray, logoEmu, docTitle, docSubtitle, docTitleEn, docSubtitleEn) : buildHeader(logoArray, logoEmu, d.language === "en" ? docTitleEn : docTitle, d.language === "en" ? docSubtitleEn : docSubtitle, d.language !== "en") },
+        headers: { default: d.language === "both" ? buildHeaderBoth(docTitle, docSubtitle, docTitleEn, docSubtitleEn) : buildHeader(d.language === "en" ? docTitleEn : docTitle, d.language === "en" ? docSubtitleEn : docSubtitle, d.language !== "en") },
         footers: { default: buildFooter(d) },
         children: [
           para(`الطرف الأول: ${party1Label}`, "right", 24, true),
