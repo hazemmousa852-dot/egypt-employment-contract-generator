@@ -97,10 +97,28 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
       toast.error("حجم الصورة كبير — الحد الأقصى ٢ ميجابايت");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => set({ logo: reader.result as string });
-    reader.readAsDataURL(file);
-    toast.success("تم رفع شعار الشركة بنجاح");
+    // تحويل أي صيغة صورة (JPEG/WebP/SVG) إلى PNG موحدة حتى يتمكن مولد
+    // Word من قراءة أبعادها بأمان من ترويسة IHDR دون انحراف في المقاس
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        const MAX = 800;
+        const ratio = Math.min(MAX / img.naturalWidth, MAX / img.naturalHeight, 1);
+        canvas.width = Math.round(img.naturalWidth * ratio);
+        canvas.height = Math.round(img.naturalHeight * ratio);
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { setLogoError("تعذر معالجة الصورة"); return; }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        set({ logo: canvas.toDataURL("image/png") });
+        toast.success("تم رفع شعار الشركة بنجاح");
+      } catch {
+        setLogoError("تعذر معالجة الصورة");
+      }
+    };
+    img.onerror = () => setLogoError("تعذر قراءة الصورة — جرّب صيغة PNG أو JPEG");
+    img.src = URL.createObjectURL(file);
   };
 
   const [logoError, setLogoError] = useState<string | null>(null);

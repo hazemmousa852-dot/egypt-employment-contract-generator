@@ -99,13 +99,24 @@ function collectBreakPoints(contractEl: HTMLElement, cssPxPerMm: number): number
 
 /**
  * يختار موضع القطع الأقرب لنهاية بند دون تجاوز الحد الأقصى المسموح.
+ * يستوعب البنود القصيرة المتتالية: إذا كانت النهاية التالية تقع ضمن هامش
+ * صغير إضافي (لا يتجاوز 12% من ارتفاع المحتوى) فتمتد نقطة القطع إليها
+ * لتجنب ترك فراغ كبير أعلى الصفحة التالية.
  */
-function pickCutPoint(breakPoints: number[], maxCutY: number, minCutY: number): number {
+function pickCutPoint(breakPoints: number[], maxCutY: number, minCutY: number, contentHeight: number): number {
+  const SHORT_CLAUSE_ALLOW = contentHeight * 0.12;
   // أقرب نهاية بند لا تتجاوز الحد الأقصى
   let best = -1;
   for (const bp of breakPoints) {
     if (bp <= maxCutY) best = bp;
     else break;
+  }
+  // استيعاب بند قصير واحد تالٍ إن كان يترك فراغًا كبيرًا
+  if (best >= 0 && best < maxCutY) {
+    for (const bp of breakPoints) {
+      if (bp > maxCutY && bp <= maxCutY + SHORT_CLAUSE_ALLOW) best = bp;
+      else if (bp > maxCutY) break;
+    }
   }
   if (best >= minCutY) return best;
   // إن لم توجد نهاية بند صالحة، اقطع عند الحد الأقصى (البنود الطويلة جدًا)
@@ -204,7 +215,7 @@ export async function downloadContractPdf(contractEl: HTMLElement): Promise<void
       if (remaining <= sliceH) {
         cutAt = canvas.height;
       } else {
-        cutAt = pickCutPoint(breakPoints, cutLimit, y0 + Math.round(sliceH * 0.55));
+        cutAt = pickCutPoint(breakPoints, cutLimit, y0 + Math.round(sliceH * 0.55), sliceH);
       }
       cutAt = Math.max(cutAt, y0 + Math.round(sliceH * 0.35)); // حد أدنى للتقدم
       cutAt = Math.min(cutAt, y0 + sliceH);

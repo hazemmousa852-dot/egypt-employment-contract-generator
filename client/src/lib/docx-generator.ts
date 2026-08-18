@@ -56,6 +56,23 @@ function salaryWordsEn(n: number): string {
   return out || "zero";
 }
 
+/* ========================= أبعاد اللوجو ========================= */
+// التحقق الصارم من توقيع PNG قبل قراءة أبعاد IHDR — إذا كانت الصورة
+// من أي نوع آخر (JPEG/WebP) أو ترويسة معطوبة فلا نحاول الاستنتاج
+function readLogoDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+  const PNG_SIG = [137, 80, 78, 71, 13, 10, 26, 10];
+  for (let i = 0; i < 8; i++) if (bytes[i] !== PNG_SIG[i]) return null;
+  const w = (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19];
+  const h = (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23];
+  if (!Number.isInteger(w) || !Number.isInteger(h) || w <= 0 || h <= 0 || w > 100000 || h > 100000) return null;
+  const MAX_W_EMU = 3429;
+  const MAX_H_EMU = 1905;
+  let emuW = Math.round((MAX_H_EMU * w) / h);
+  let emuH = MAX_H_EMU;
+  if (emuW > MAX_W_EMU) { emuW = MAX_W_EMU; emuH = Math.round((MAX_W_EMU * h) / w); }
+  return { width: Math.max(500, Math.min(emuW, MAX_W_EMU)), height: Math.max(500, Math.min(emuH, MAX_H_EMU)) };
+}
+
 /* ========================= تحويل اللوجو ========================= */
 function dataUrlToArray(dataUrl?: string): Uint8Array | null {
   if (!dataUrl) return null;
@@ -344,20 +361,12 @@ export async function generateContractDocx(d: ContractData): Promise<Blob> {
     : contractEndDate(d.work.startDate, d.durationYears ?? 0, d.durationMonths ?? 0);
   const endDateIso = endDateObj ? endDateObj.toISOString().slice(0, 10) : null;
   const logoArray = dataUrlToArray(d.logo);
-  // قراءة أبعاد PNG الأصلية من ترويسة IHDR لضبط نسبة اللوجو دون تشويه
-  let logoEmu: { width: number; height: number } | null = null;
-  if (logoArray && logoArray.length > 24) {
-    const w = (logoArray[16] << 24) | (logoArray[17] << 16) | (logoArray[18] << 8) | logoArray[19];
-    const h = (logoArray[20] << 24) | (logoArray[21] << 16) | (logoArray[22] << 8) | logoArray[23];
-    if (Number.isInteger(w) && Number.isInteger(h) && w > 0 && h > 0) {
-      const MAX_W_EMU = 3429; // 3.6 سم عرضًا كحد أقصى للترويسة
-      const MAX_H_EMU = 1905; // 2 سم ارتفاعًا كحد أقصى
-      let emuW = Math.round((MAX_H_EMU * w) / h); // ابدأ بالارتفاع الأقصى
-      let emuH = MAX_H_EMU;
-      if (emuW > MAX_W_EMU) { emuW = MAX_W_EMU; emuH = Math.round((MAX_W_EMU * h) / w); }
-      logoEmu = { width: emuW, height: emuH };
-    }
-  }
+  // قراءة أبعاد اللوجو الأصلية لضبط النسبة دون تشويه (PNG فقط عبر ترويسة IHDR)
+  const MAX_W_EMU = 3429; // 3.6 سم عرضًا كحد أقصى للترويسة
+  const MAX_H_EMU = 1905; // 2 سم ارتفاعًا كحد أقصى
+  const DEFAULT_EMU = { width: 3429, height: 1905 }; // الأبعاد الآمنة القصوى
+  let logoEmu: { width: number; height: number } | null = logoArray && logoArray.length > 24 ? readLogoDimensions(logoArray) : null;
+  if (!logoEmu) logoEmu = DEFAULT_EMU;
 
   const isTraining = d.type === "training";
   const isConsultant = d.type === "consultant";
