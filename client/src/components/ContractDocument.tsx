@@ -141,8 +141,8 @@ function ArabicSide({ data }: { data: ContractData }) {
       <div className="border-b-[3px] border-double border-[#1a1a2e] pb-4 mb-6">
         <div className="flex items-center justify-between gap-4">
           <div className="text-center flex-1">
-            <p className="text-sm font-bold tracking-wide">بسم الله الرحمن الرحيم</p>
-            <h1 className="font-display text-2xl font-bold mt-1">{contractTitle[data.type]}</h1>
+            <p className="font-display text-xl font-bold text-[#1a1a2e]">بِسْمِ اللهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+            <h1 className="font-display text-2xl font-bold mt-1.5">{contractTitle[data.type]}</h1>
             <p className="text-xs mt-1 text-muted-foreground">
               {isTraining(data)
                 ? "وفقًا لأحكام قانون العمل الصادر بالقانون رقم (١٤) لسنة ٢٠٢٥ وقانون التأمينات الاجتماعية رقم (١٤٨) لسنة ٢٠١٩"
@@ -207,8 +207,9 @@ function ArabicSide({ data }: { data: ContractData }) {
         حُرر هذا العقد في تاريخ {dateArabic(data.contractDate)} ميلاديًا، وطُبع من هذا النموذج نسخة للطرف الأول ونسخة للطرف الثاني ونسخة بمكتب التأمينات الاجتماعية المختص ونسخة بالجهة الإدارية المختصة.
       </p>
 
-      {/* التوقيعات */}
-      <div className="contract-signatures mt-10 flex items-start justify-between gap-8 page-break-avoid">
+      {/* التوقيعات: تُعرض في المعاينة الإلكترونية فقط؛
+          عند الطباعة/تصدير PDF يُطبع بلوك التوقيعات كفوتر ثابت أسفل كل صفحة عبر pdf.ts */}
+      <div className="contract-signatures mt-10 flex items-start justify-between gap-8 page-break-avoid no-print">
         <div className="flex-1 text-center border-t border-[#1a1a2e]/40 pt-3">
           <p className="font-bold text-sm mb-6">الطرف الأول — صاحب العمل</p>
           <p className="text-sm">الاسم: ..............................</p>
@@ -238,7 +239,8 @@ function EnglishSide({ data }: { data: ContractData }) {
       <div className="border-b-[3px] border-double border-[#1a1a2e] pb-4 mb-6">
         <div className="flex items-center justify-between gap-4">
           <div className="text-center flex-1">
-            <h1 className="font-display text-xl font-bold">{contractTitleEn[data.type]}</h1>
+            <p className="font-display text-sm font-semibold text-[#1a1a2e]">In the name of God, the Most Gracious, the Most Merciful</p>
+            <h1 className="font-display text-xl font-bold mt-1">{contractTitleEn[data.type]}</h1>
             <p className="text-xs mt-1 text-muted-foreground">
               {isTraining(data)
                 ? "Under the Egyptian Labour Law No. (14) of 2025 and the Social Insurance Law No. (148) of 2019"
@@ -301,8 +303,8 @@ function EnglishSide({ data }: { data: ContractData }) {
         This contract was drawn up on {data.contractDate ? fmtShort(data.contractDate) : "......."} (Gregorian). Copies were printed for the First Party, the Second Party, the competent Social Insurance office, and the competent administrative authority.
       </p>
 
-      {/* التوقيعات */}
-      <div className="mt-10 flex items-start justify-between gap-8 page-break-avoid">
+      {/* التوقيعات: للمعاينة الإلكترونية فقط؛ عند الطباعة/PDF يُطبع الفوتر الثابت */}
+      <div className="mt-10 flex items-start justify-between gap-8 page-break-avoid no-print">
         <div className="flex-1 text-center border-t border-[#1a1a2e]/40 pt-3">
           <p className="font-bold text-sm mb-6">The First Party — the Employer</p>
           <p className="text-sm">Name: ..............................</p>
@@ -325,14 +327,14 @@ function ContractBody({ data }: { data: ContractData }) {
   const lang = data.language ?? "ar";
   if (lang === "en") {
     return (
-      <div className="contract-page">
+      <div className="contract-page" data-lang="en" lang="en">
         <EnglishSide data={data} />
       </div>
     );
   }
   if (lang === "both") {
     return (
-      <div className="contract-page contract-page-both">
+      <div className="contract-page contract-page-both" data-lang="both">
         <div className="grid grid-cols-2 gap-4 items-start">
           <div className="border-l border-border pl-3">{<ArabicSide data={data} />}</div>
           <div className="border-r border-border pr-3">{<EnglishSide data={data} />}</div>
@@ -341,7 +343,7 @@ function ContractBody({ data }: { data: ContractData }) {
     );
   }
   return (
-    <div className="contract-page">
+    <div className="contract-page" data-lang="ar">
       <ArabicSide data={data} />
     </div>
   );
