@@ -428,7 +428,7 @@ export async function generateContractDocx(d: ContractData, overrides?: Record<n
           para(`الطرف الثاني: ${party2Label}`, "right", 24, true),
           para(d.employee.name || "..........", "right", 26, true),
           para(
-            `${d.employee.gender === "female" ? "أنثى" : "ذكر"} — رقم قومي: ${d.employee.nationalId ? arabicNumeral(d.employee.nationalId) : ".........."} — مؤهل: ${d.employee.qualification || ".........."}`,
+            `${d.employee.gender === "female" ? "أنثى" : "ذكر"} — رقم قومي: ${d.employee.nationalId ? arabicNumeral(d.employee.nationalId) : ".........."} — رقم تأميني: ${d.employee.insuranceNumber ? arabicNumeral(d.employee.insuranceNumber) : ".........."} — مؤهل: ${d.employee.qualification || ".........."}`,
             "right",
             22,
             true,

@@ -25,7 +25,7 @@ interface Props {
 }
 
 const emptyEmployer: PartyData = { name: "", role: "صاحب العمل", nationalId: "", phone: "", address: "", email: "", commercialRegister: "" };
-const emptyEmployee: EmployeeData = { name: "", gender: "male", nationalId: "", jobTitle: "", department: "", qualification: "", phone: "", address: "" };
+const emptyEmployee: EmployeeData = { name: "", gender: "male", nationalId: "", insuranceNumber: "", jobTitle: "", department: "", qualification: "", phone: "", address: "" };
 const emptySalary: SalaryData = { basicSalary: 0, allowances: "", paymentMethod: "cash" };
 const emptyWork: WorkData = { startDate: "", trialPeriod: false, workLocation: "", workNature: "عمل دائم", dailyHours: "٨", weeklyRestDay: "يوم الجمعة", nonCompete: false };
 
@@ -201,6 +201,9 @@ export default function ContractForm({ data, onChange, onGenerate }: Props) {
           </Field>
           <Field label="الرقم القومي" required hint="١٤ رقمًا كما هو ببطاقة الرقم القومي">
             <Input value={data.employee.nationalId} onChange={(e) => setEmployee({ nationalId: e.target.value })} placeholder="2xxxxxxxxxxx" dir="ltr" className="input-chancery" />
+          </Field>
+          <Field label="الرقم التأميني" hint="يُدرج ضمن بيانات العامل وفق المادة (٨٩)">
+            <Input value={data.employee.insuranceNumber ?? ""} onChange={(e) => setEmployee({ insuranceNumber: e.target.value })} placeholder="الرقم التأميني للعامل" dir="ltr" className="input-chancery" />
           </Field>
           <Field label="النوع">
             <div className="flex gap-4 pt-1.5">
