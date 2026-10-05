@@ -15,11 +15,11 @@ const A4_H_MM = 297;
 const MIN_LAST_PAGE_FILL = 0.35;
 /** هوامش الطباعة المطابقة لـ @page في index.css */
 const PAGE_MARGIN_MM = { x: 14, y: 12 };
-const FOTER_H_MM = 26; // ارتفاع فوتر التوقيعات أسفل كل صفحة
+const FOOTER_H_MM = 26; // ارتفاع فوتر التوقيعات أسفل كل صفحة
 const FOOTER_GAP_MM = 8; // هامش أبيض فاصل بين آخر المحتوى والفوتر
 
 const CONTENT_W_MM = A4_W_MM - PAGE_MARGIN_MM.x * 2;
-const CONTENT_H_MM = A4_H_MM - PAGE_MARGIN_MM.y * 2 - FOTER_H_MM - FOOTER_GAP_MM;
+const CONTENT_H_MM = A4_H_MM - PAGE_MARGIN_MM.y * 2 - FOOTER_H_MM - FOOTER_GAP_MM;
 
 /**
  * يرسم خانات توقيع الطرفين أسفل شريحة الصفحة على لوحة canvas.
@@ -30,7 +30,7 @@ function drawSignatureBlock(
   sliceCanvas: HTMLCanvasElement,
   isArabic: boolean,
 ): HTMLCanvasElement {
-  const blockH = Math.round(sliceCanvas.width * (FOTER_H_MM / 210));
+  const blockH = Math.round(sliceCanvas.width * (FOOTER_H_MM / 210));
   const sheet = document.createElement("canvas");
   sheet.width = sliceCanvas.width;
   sheet.height = sliceCanvas.height + blockH;
@@ -214,7 +214,7 @@ export async function downloadContractPdf(contractEl: HTMLElement): Promise<void
 
     // ارتفاع الفوتر المحجوز أسفل كل صفحة (بيكسل) — البنود الطويلة تُقطع فقط إذا لم
     // يكن البند التالي يبدأ داخل هذه المنطقة، وإلا نمد الشريحة لنقطة نهاية البند.
-    const footerReservePx = Math.round((FOTER_H_MM + FOOTER_GAP_MM) * cssPxPerMm);
+    const footerReservePx = Math.round((FOOTER_H_MM + FOOTER_GAP_MM) * cssPxPerMm);
 
     let y0 = 0;
     let first = true;
@@ -271,6 +271,18 @@ export async function downloadContractPdf(contractEl: HTMLElement): Promise<void
       if (imgH > 0) doc.addImage(imgData, "JPEG", PAGE_MARGIN_MM.x, PAGE_MARGIN_MM.y, pageContentW, imgH);
 
       y0 = cutAt;
+    }
+
+    // ترويسة وفوتر ثابتان مع ترقيم واضح لكل صفحات ملف PDF.
+    const pageCount = doc.getNumberOfPages();
+    const contractNumber = contractEl.getAttribute("data-contract-number") || "—";
+    for (let pageNo = 1; pageNo <= pageCount; pageNo += 1) {
+      doc.setPage(pageNo);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(90, 90, 90);
+      doc.text(`Employment Contract No. ${contractNumber}`, PAGE_MARGIN_MM.x, 7);
+      doc.text(`Page ${pageNo} / ${pageCount}`, A4_W_MM / 2, A4_H_MM - 4, { align: "center" });
     }
 
     const workerName = (contractEl.getAttribute("data-worker-name") || "عقد_عمل").trim();

@@ -92,7 +92,7 @@ export function buildEnClauses(d: ContractData): EnClause[] {
       number: 3,
       title: `The Second Party (${party2Word(d).replace("the ", "").replace("Trainee", "Trainee").replace("Consultant", "Consultant").replace("Employee", "Employee")})`,
       articleRef: "",
-      text: `${d.employee.name || ".........."}, Egyptian nationality, national ID: ${d.employee.nationalId || ".........."}, ${d.employee.gender === "female" ? "female" : "male"}, holder of a qualification in ${d.employee.qualification || ".........."}, residing at ${d.employee.address || ".........."}, tel: ${d.employee.phone || ".........."} (hereinafter referred to as «the Second Party» or «the Employee»).`,
+      text: `${d.employee.name || ".........."}, Egyptian nationality, national ID: ${d.employee.nationalId || ".........."}, social insurance no.: ${d.employee.insuranceNumber || ".........."}, ${d.employee.gender === "female" ? "female" : "male"}, holder of a qualification in ${d.employee.qualification || ".........."}, residing at ${d.employee.address || ".........."}, tel: ${d.employee.phone || ".........."} (hereinafter referred to as «the Second Party» or «the Employee»).`,
     },
     {
       number: 4,
