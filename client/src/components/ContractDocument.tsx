@@ -229,6 +229,7 @@ function ArabicSide({ data, forPrint, overrides, onEditClause }: { data: Contrac
           <p className="font-bold text-sm border-b border-[#b3892f] pb-1 mb-2">الطرف الثاني: {party2Label_}</p>
           <p className="text-sm leading-relaxed">{data.employee.name || ".........."} — {data.employee.gender === "female" ? "أنثى" : "ذكر"}</p>
           <p className="text-sm" dir="ltr" style={{ textAlign: "right" }}>رقم قومي: {data.employee.nationalId || ".........."}</p>
+          <p className="text-sm" dir="ltr" style={{ textAlign: "right" }}>رقم تأميني: {data.employee.insuranceNumber || ".........."}</p>
           <p className="text-sm">{data.employee.jobTitle || ".........."} — {data.employee.address || ""}</p>
         </div>
       </div>
@@ -348,6 +349,7 @@ function EnglishSide({ data, forPrint, overrides, onEditClause }: { data: Contra
           <p className="font-bold text-sm border-b border-[#b3892f] pb-1 mb-2">The Second Party: {p2}</p>
           <p className="text-sm leading-relaxed">{data.employee.name || ".........."} — {data.employee.gender === "female" ? "Female" : "Male"}</p>
           <p className="text-sm">National ID: {data.employee.nationalId || ".........."}</p>
+          <p className="text-sm">Social insurance no.: {data.employee.insuranceNumber || ".........."}</p>
           <p className="text-sm">{data.employee.jobTitle || ".........."} — {data.employee.address || ""}</p>
         </div>
       </div>
@@ -416,14 +418,14 @@ function ContractBody({ data, forPrint, overrides, onEditClause }: { data: Contr
   const workerName = data.employee.name || "عقد_عمل";
   if (lang === "en") {
     return (
-      <div className="contract-page" data-lang="en" data-worker-name={workerName} lang="en">
+      <div className="contract-page" data-lang="en" data-worker-name={workerName} data-contract-number={data.contractNumber || "—"} lang="en">
         <EnglishSide data={data} forPrint={forPrint} overrides={overrides} onEditClause={onEditClause} />
       </div>
     );
   }
   if (lang === "both") {
     return (
-      <div className="contract-page contract-page-both" data-lang="both" data-worker-name={workerName}>
+      <div className="contract-page contract-page-both" data-lang="both" data-worker-name={workerName} data-contract-number={data.contractNumber || "—"}>
         <div className="grid grid-cols-2 gap-4 items-start">
           <div className="border-l border-border pl-3">{<ArabicSide data={data} forPrint={forPrint} overrides={overrides} onEditClause={onEditClause} />}</div>
           <div className="border-r border-border pr-3">{<EnglishSide data={data} forPrint={forPrint} overrides={overrides} onEditClause={onEditClause} />}</div>
@@ -432,7 +434,7 @@ function ContractBody({ data, forPrint, overrides, onEditClause }: { data: Contr
     );
   }
   return (
-    <div className="contract-page" data-lang="ar" data-worker-name={workerName}>
+    <div className="contract-page" data-lang="ar" data-worker-name={workerName} data-contract-number={data.contractNumber || "—"}>
       <ArabicSide data={data} forPrint={forPrint} overrides={overrides} onEditClause={onEditClause} />
     </div>
   );
