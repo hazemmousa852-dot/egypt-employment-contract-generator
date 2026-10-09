@@ -165,7 +165,7 @@ export default function Home() {
       <header className="no-print border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="container flex items-center justify-between py-3">
           <div className="flex items-center gap-3">
-            <StampLogo size={44} />
+            <img src="https://hazemmousa852-dot.github.io/marjaak-alqanuni/brand/logo-512.png" alt="شعار حازم موسى" width={48} height={48} className="hm-tool-logo hm-tool-logo--compact" />
             <div>
               <h1 className="font-display text-xl font-bold leading-tight">منشئ عقود العمل</h1>
               <p className="text-[11px] text-muted-foreground -mt-0.5">مطابق لقانون العمل المصري رقم ١٤ لسنة ٢٠٢٥</p>
@@ -383,3 +383,4 @@ export default function Home() {
     </div>
   );
 }
+
