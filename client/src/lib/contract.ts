@@ -179,10 +179,17 @@ export function contractEndDate(startDate: string, years: number, months: number
   if (!startDate) return null;
   const totalM = years * 12 + months;
   if (totalM <= 0) return null;
-  const s = new Date(startDate);
-  s.setMonth(s.getMonth() + totalM);
-  s.setDate(s.getDate() - 1);
-  return s;
+  if (!Number.isInteger(totalM)) return null;
+  const [year, month, day] = startDate.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  const source = new Date(year, month - 1, day, 12);
+  if (source.getFullYear() !== year || source.getMonth() !== month - 1 || source.getDate() !== day) return null;
+  const target = new Date(year, month - 1 + totalM, 1, 12);
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0, 12).getDate();
+  // Missing anniversary day: end on the target month's last calendar day.
+  if (day > lastDay) target.setDate(lastDay);
+  else { target.setDate(day); target.setDate(target.getDate() - 1); }
+  return target;
 }
 
 export function totalMonths(years: number, months: number): number {

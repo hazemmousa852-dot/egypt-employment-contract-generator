@@ -121,7 +121,7 @@ export function buildEnClauses(d: ContractData): EnClause[] {
       title: "Probationary Period",
       articleRef: "",
       text: d.work.trialPeriod
-        ? "The Parties agreed to determine a probationary period of three months commencing from the start of work stated in Clause (6) above. The Employee may not be appointed under probation more than once with the same employer. If the Employee proves unsuitable for the agreed work during the probationary period, the First Party may terminate the relationship without compensation after notifying the Employee at least two weeks in advance."
+        ? "The Parties agreed to determine a probationary period of three months commencing from the start of work stated in Clause (6) above. The Employee may not be appointed under probation more than once with the same employer. Termination during probation is subject to the applicable law and this contract; no notice period not stated in Article (90) is presumed."
         : "The Parties agreed not to determine a probationary period for the Employee.",
     },
     {
