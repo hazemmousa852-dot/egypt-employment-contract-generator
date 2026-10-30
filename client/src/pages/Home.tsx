@@ -162,7 +162,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* ===== الترويسة الرسمية ===== */}
-      <header className="hm-ui-header no-print border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-40">
+      <header className="hm-ui hm-app-toolbar hm-ui-header no-print border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="container flex items-center justify-between py-3">
           <div className="flex items-center gap-3">
             <img src="https://hazemmousa852-dot.github.io/marjaak-alqanuni/brand/logo-512.png" alt="شعار حازم موسى" width={48} height={48} className="hm-tool-logo hm-tool-logo--compact" />
@@ -190,7 +190,7 @@ export default function Home() {
 
       <main className="flex-1">
         {/* ===== البطل ===== */}
-        <section className="no-print relative overflow-hidden">
+        <section className="hm-ui hm-hero no-print relative overflow-hidden">
           <div className="absolute inset-0 opacity-[0.35]" style={{
             backgroundImage: "radial-gradient(circle at 85% 30%, oklch(0.9 0.03 85 / 0.6) 0%, transparent 50%), radial-gradient(circle at 10% 80%, oklch(0.65 0.09 75 / 0.12) 0%, transparent 45%)",
           }} />
@@ -200,9 +200,9 @@ export default function Home() {
                 <div className="inline-flex items-center gap-2 rounded-[3px] border border-[var(--gold)]/60 bg-[var(--gold)]/10 px-3 py-1 text-xs font-semibold text-[oklch(0.5_0.08_75)] mb-5">
                   <Scale size={13} /> أداة عامة مجانية — تُتاح لأي صاحب عمل أو عامل في مصر
                 </div>
-                <h2 className="font-display text-3xl md:text-[2.7rem] leading-[1.3] font-bold mb-5">
+                <h2 className="hm-hero-title font-display text-3xl md:text-[2.7rem] leading-[1.3] font-bold mb-5">
                   حرّر عقد عملٍ موثّقًا
-                  <span className="text-[var(--seal)]"> بحسب قانون العمل المصري الجديد</span>
+                  <span className="hm-hero-accent text-[var(--seal)]"> بحسب قانون العمل المصري الجديد</span>
                 </h2>
                 <p className="text-base text-muted-foreground leading-relaxed max-w-xl mb-6">
                   تُبنى بنود العقد الفردي نصًا على أحكام قانون العمل الصادر بالقانون رقم (١٤) لسنة ٢٠٢٥ — من مسمّى الوظيفة ومدة العقد المحدد المدة وتاريخ نهايته المحسوب آليًا، إلى الأجر والعلاوة الدورية والإجازات ومهلة الإشعار الكتابي. حرّر بيانات الطرفين، ووثّق الشعار، واطبع العقد كاملًا في دقائق.
@@ -252,7 +252,7 @@ export default function Home() {
         </section>
 
         {/* ===== شريط الحصرية (لا يظهر في الطباعة) ===== */}
-        <div className="no-print relative">
+        <div className="hm-ui no-print relative">
           <div className="chancery-rule" />
           <div className="container flex items-center justify-center gap-3 bg-primary py-3 text-[15px] font-semibold text-white">
             <StampLogo size={24} />
@@ -262,7 +262,7 @@ export default function Home() {
         </div>
 
         {/* ===== النموذج ===== */}
-        <section className="no-print container py-8">
+        <section className="hm-ui no-print container py-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="h-[3px] flex-1 bg-gradient-to-l from-transparent via-[var(--gold)] to-[var(--seal)]" />
             <h3 className="font-display text-2xl font-bold">بيانات العقد</h3>
@@ -289,7 +289,7 @@ export default function Home() {
         {/* ===== المعاينة والعقد ===== */}
         {showContract && (
           <section id="contract-preview" className="no-print container py-8 border-t border-border">
-            <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+            <div className="hm-ui flex items-center justify-between flex-wrap gap-3 mb-6">
               <div>
                 <h3 className="font-display text-2xl font-bold">مسودة العقد</h3>
                 <p className="text-sm text-muted-foreground mt-1">
@@ -329,7 +329,7 @@ export default function Home() {
       </main>
 
       {/* ===== التذييل ===== */}
-      <footer className="no-print border-t border-border mt-10">
+      <footer className="hm-ui no-print border-t border-border mt-10">
         <div className="chancery-rule" />
         <div className="container py-6 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
@@ -349,7 +349,7 @@ export default function Home() {
 
       {/* مربع حوار تحرير نص البند */}
       <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
-        <DialogContent dir="rtl" className="max-w-2xl">
+        <DialogContent dir="rtl" className="hm-ui max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               تحرير نص البند ({editTarget?.kind === "ar" ? editTarget.number : ""})

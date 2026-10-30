@@ -1,43 +1,121 @@
-/* HM tools identity v3. Canonical source: marjaak-alqanuni/brand/tool-ui.css.
-   Screen only: contract documents, print geometry and exports retain their styles. */
+/* Hazem Moussa tools · v1. Opt in explicitly; screen UI only.
+   Printed contracts, PDF snapshots (.contract-page), and exported files stay native. */
 @media screen {
-  :root {
-    --hm-navy:#071827; --hm-teal:#16746e; --hm-gold:#c8a365;
-    --hm-teal-light:#edf6f4; --hm-navy-light:#edf2f6;
-    --hm-amber:#8a6426; --hm-amber-light:#fcf6e9; --hm-canvas:#f3f6f7;
+  body[data-hm-theme="v1"] {
+    --hm-navy: #071827;
+    --hm-teal: #16746e;
+    --hm-teal-soft: #eaf5f3;
+    --hm-teal-light: var(--hm-teal-soft);
+    --hm-navy-light: #edf3f5;
+    --hm-amber: #8a6426;
+    --hm-amber-light: #fcf6e9;
+    --hm-gold: #c8a365;
+    --hm-gold-soft: #faf4e7;
+    --hm-canvas: #f3f6f7;
+    --hm-surface: #fff;
+    --hm-ink: #173449;
+    --hm-muted: #536978;
+    --hm-line: #d9e3e8;
+    --hm-radius: 16px;
+    background: var(--hm-canvas);
+    color: var(--hm-ink);
+    font-family: "Cairo", Tahoma, Arial, sans-serif;
   }
-  :root:root {
-    --background:var(--hm-canvas); --foreground:#193344;
-    --card:#fff; --card-foreground:#193344;
-    --popover:#fff; --popover-foreground:#193344;
-    --primary:var(--hm-teal); --primary-foreground:#fff;
-    --secondary:#edf3f4; --secondary-foreground:#193344;
-    --muted:#edf3f4; --muted-foreground:#536b79;
-    --accent:var(--hm-teal-light); --accent-foreground:#125e59;
-    --border:#dce5e8; --input:#ccdadd; --ring:var(--hm-teal);
-    --radius:0.75rem;
-    --gold:var(--hm-gold); --ink:var(--hm-navy); --seal:var(--hm-teal); --paper:#fff;
+  [data-hm-theme="v1"] .hm-ui {
+    --background: var(--hm-canvas);
+    --foreground: var(--hm-ink);
+    --card: var(--hm-surface);
+    --card-foreground: var(--hm-ink);
+    --primary: var(--hm-teal);
+    --primary-foreground: #fff;
+    --secondary: #edf3f5;
+    --secondary-foreground: var(--hm-navy);
+    --muted: #edf3f5;
+    --muted-foreground: var(--hm-muted);
+    --border: var(--hm-line);
+    --input: var(--hm-line);
+    --ring: var(--hm-teal);
+    --seal: var(--hm-teal);
+    --gold: var(--hm-gold);
+    --ink: var(--hm-ink);
   }
-  body { font-family:Cairo,Tahoma,sans-serif; }
-  .hm-ui-header {
-    background:var(--hm-navy)!important; color:#fff;
-    border-bottom:2px solid var(--hm-gold)!important;
+  [data-hm-theme="v1"] .hm-ui :is(h1,h2,h3,h4,.font-display,.chancery-section-title) {
+    font-family: "Cairo", Tahoma, Arial, sans-serif;
+    letter-spacing: normal;
   }
-  .hm-ui-header h1,.hm-ui-header .font-display,.hm-ui-header>a {color:#fff!important}
-  .hm-ui-header .text-muted-foreground,.hm-ui-header .tag {color:#cedae2!important}
-  .hm-ui-header nav a {color:#fff!important;border-color:var(--hm-gold)!important}
-  .hm-ui-header nav a:hover {background:#17384a}
-  .hm-ui-header a:hover {text-decoration:underline;text-underline-offset:4px}
-  .hm-ui-header button {color:#fff}
-  .hm-ui-header button:hover {background:#17384a;color:#fff}
-  .hm-ui-header button[data-slot="button"][class*="border"] {background:#17384a}
-  .hm-ui-header .hm-tool-logo {border:1px solid var(--hm-gold);border-radius:50%;object-fit:contain;background:var(--hm-navy)}
-  button:focus-visible,a:focus-visible {outline:3px solid var(--hm-gold);outline-offset:3px}
-  /* A single static header replaces overlapping branding bars on these pilots. */
-  #hm-tools-hub-bar,#hm-tools-brand-chip {display:none!important}
-  [data-hm-tools-offset-header] {top:0!important}
-}
-@media screen and (max-width:640px) {
-  .hm-ui-header > .container {flex-wrap:wrap;gap:12px}
-  .hm-ui-header h1 {font-size:1rem}
+  [data-hm-theme="v1"] .hm-ui :is(h1,h2,h3,h4) { text-wrap: balance; }
+  [data-hm-theme="v1"] .hm-ui :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea,[data-slot="select-trigger"]) {
+    border: 1px solid var(--hm-line);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--hm-ink);
+    font-family: "Cairo", Tahoma, Arial, sans-serif;
+    min-height: 44px;
+    min-width: 0;
+    box-shadow: none;
+  }
+  [data-hm-theme="v1"] .hm-ui :is(input,select,textarea):focus-visible {
+    outline: 3px solid #16746e36;
+    outline-offset: 2px;
+    border-color: var(--hm-teal);
+  }
+  [data-hm-theme="v1"] .hm-ui :is(button,a,[role="button"]):focus-visible {
+    outline: 3px solid var(--hm-gold);
+    outline-offset: 3px;
+  }
+  [data-hm-theme="v1"] .hm-ui :is(button,[data-slot="button"]) {
+    font-family: "Cairo", Tahoma, Arial, sans-serif;
+    border-radius: 10px;
+  }
+  [data-hm-theme="v1"] .hm-ui :is(.hm-primary,.primary,.bg-primary) {
+    background: var(--hm-teal);
+    border-color: var(--hm-teal);
+    color: #fff;
+    font-weight: 700;
+  }
+  [data-hm-theme="v1"] .hm-ui :is(.hm-primary,.primary,.bg-primary):hover:not(:disabled) { background: #105f5b; }
+  [data-hm-theme="v1"] .hm-ui :is(.hm-secondary,.secondary) {
+    background: #fff;
+    color: var(--hm-navy);
+    border: 1px solid var(--hm-line);
+  }
+  [data-hm-theme="v1"] .hm-panel {
+    border: 1px solid var(--hm-line) !important;
+    border-radius: var(--hm-radius) !important;
+    background: #fff;
+    box-shadow: 0 6px 22px #07182707;
+  }
+  [data-hm-theme="v1"] .hm-ui .card-chancery { border-color: var(--hm-line); border-radius: var(--hm-radius); overflow: hidden; box-shadow: 0 6px 22px #07182707; }
+  [data-hm-theme="v1"] .hm-ui .card-chancery::before { display: none; }
+  [data-hm-theme="v1"] .hm-ui .chancery-rule { height: 3px; background: linear-gradient(90deg,var(--hm-gold),var(--hm-teal)); }
+  [data-hm-theme="v1"] .hm-ui .seal-medallion { border-color: var(--hm-line); color: var(--hm-teal); background: var(--hm-teal-soft); }
+  [data-hm-theme="v1"] .hm-notice { background: var(--hm-gold-soft); color: #73541f; border-color: #e4d2ac; border-radius: 10px; }
+  [data-hm-theme="v1"] .hm-result { background: var(--hm-teal-soft); border: 1px solid #bddbd5; border-radius: var(--hm-radius); }
+  [data-hm-theme="v1"] .hm-app-toolbar:not(.hm-ui-header) { background: #fff; border-bottom: 1px solid var(--hm-line); box-shadow: 0 2px 8px #07182705; }
+  [data-hm-theme="v1"] .hm-ui button:disabled { opacity: .5; cursor: not-allowed; }
+  [data-hm-theme="v1"] #hm-tools-hub-bar { position: sticky; background: var(--hm-navy); box-shadow: none; border-color: #c8a36559; }
+  [data-hm-theme="v1"] #hm-tools-hub-footer { background: var(--hm-navy); border-color: #c8a36559; border-radius: var(--hm-radius); box-shadow: none; }
+  [data-hm-theme="v1"] #hm-tools-hub-bar .hm-tools-hub-action { background: #ffffff0a; color: #e8c88d !important; border-color: #c8a36580; }
+  [data-hm-theme="v1"] #hm-tools-hub-footer .hm-tools-hub-footer__button { background: var(--hm-teal); color: #fff !important; border: 1px solid #ffffff20; border-radius: 10px; }
+  [data-hm-theme="v1"] #hm-tools-brand-chip, [data-hm-theme="v1"] #hm-tools-hub-bar { display: none !important; }
+  [data-hm-theme="v1"] .hm-ui-header { background: var(--hm-navy) !important; color: #fff; border-bottom: 2px solid var(--hm-gold) !important; }
+  [data-hm-theme="v1"] .hm-ui-header :is(h1,.font-display), [data-hm-theme="v1"] .hm-ui-header > a { color: #fff !important; }
+  [data-hm-theme="v1"] .hm-ui-header .text-muted-foreground { color: #cedae2 !important; }
+  [data-hm-theme="v1"] .hm-ui-header :is(nav a,button) { color: #fff; }
+  [data-hm-theme="v1"] .hm-ui-header button:hover { background: #17384a; }
+  [data-hm-theme="v1"] .hm-header-back { color: #eed6ad !important; font: 700 12px Cairo,Tahoma,sans-serif; border: 1px solid #c8a36580; border-radius: 10px; padding: 8px 12px; text-decoration: none; white-space: nowrap; }
+  [data-hm-theme="v1"] [data-hm-tools-offset-header] { top: 0 !important; }
+  [data-hm-theme="v1"] .hm-ui .hm-hero-title { color: var(--hm-navy); }
+  [data-hm-theme="v1"] .hm-ui .hm-hero-accent { color: var(--hm-teal); }
+  [data-hm-theme="v1"] .hm-ui .hm-context-band { background: var(--hm-navy); }
+  [data-hm-theme="v1"] .hm-ui .hm-hero { background: linear-gradient(140deg,#f3f6f7,#eaf5f3); }
+  [data-hm-theme="v1"] .hm-ui .hm-hero::after { content: ""; position: absolute; inset-inline: 0; bottom: 0; height: 1px; background: var(--hm-line); pointer-events: none; }
+  @media (max-width: 640px) {
+    [data-hm-theme="v1"] .hm-app-toolbar > .container { flex-wrap: wrap; gap: 12px; }
+    [data-hm-theme="v1"] .hm-app-toolbar h1 { font-size: 1rem; }
+    [data-hm-theme="v1"] .hm-app-toolbar [data-slot="button"] { font-size: 11px; padding-inline: 9px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-hm-theme="v1"] .hm-ui * { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
+  }
 }
