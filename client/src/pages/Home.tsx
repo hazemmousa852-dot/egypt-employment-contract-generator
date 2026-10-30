@@ -162,7 +162,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* ===== الترويسة الرسمية ===== */}
-      <header className="no-print border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-40">
+      <header className="hm-ui-header no-print border-b border-border bg-card/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="container flex items-center justify-between py-3">
           <div className="flex items-center gap-3">
             <img src="https://hazemmousa852-dot.github.io/marjaak-alqanuni/brand/logo-512.png" alt="شعار حازم موسى" width={48} height={48} className="hm-tool-logo hm-tool-logo--compact" />
@@ -254,7 +254,7 @@ export default function Home() {
         {/* ===== شريط الحصرية (لا يظهر في الطباعة) ===== */}
         <div className="no-print relative">
           <div className="chancery-rule" />
-          <div className="container flex items-center justify-center gap-3 bg-[oklch(0.45_0.19_25)] py-3 text-[15px] font-semibold text-white">
+          <div className="container flex items-center justify-center gap-3 bg-primary py-3 text-[15px] font-semibold text-white">
             <StampLogo size={24} />
             <span>أداة حصرية للمتدربين مع الأستاذ حازم موسى في شئون العاملين والمرتبات</span>
           </div>

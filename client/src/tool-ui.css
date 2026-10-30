@@ -1,0 +1,43 @@
+/* HM tools identity v3. Canonical source: marjaak-alqanuni/brand/tool-ui.css.
+   Screen only: contract documents, print geometry and exports retain their styles. */
+@media screen {
+  :root {
+    --hm-navy:#071827; --hm-teal:#16746e; --hm-gold:#c8a365;
+    --hm-teal-light:#edf6f4; --hm-navy-light:#edf2f6;
+    --hm-amber:#8a6426; --hm-amber-light:#fcf6e9; --hm-canvas:#f3f6f7;
+  }
+  :root:root {
+    --background:var(--hm-canvas); --foreground:#193344;
+    --card:#fff; --card-foreground:#193344;
+    --popover:#fff; --popover-foreground:#193344;
+    --primary:var(--hm-teal); --primary-foreground:#fff;
+    --secondary:#edf3f4; --secondary-foreground:#193344;
+    --muted:#edf3f4; --muted-foreground:#536b79;
+    --accent:var(--hm-teal-light); --accent-foreground:#125e59;
+    --border:#dce5e8; --input:#ccdadd; --ring:var(--hm-teal);
+    --radius:0.75rem;
+    --gold:var(--hm-gold); --ink:var(--hm-navy); --seal:var(--hm-teal); --paper:#fff;
+  }
+  body { font-family:Cairo,Tahoma,sans-serif; }
+  .hm-ui-header {
+    background:var(--hm-navy)!important; color:#fff;
+    border-bottom:2px solid var(--hm-gold)!important;
+  }
+  .hm-ui-header h1,.hm-ui-header .font-display,.hm-ui-header>a {color:#fff!important}
+  .hm-ui-header .text-muted-foreground,.hm-ui-header .tag {color:#cedae2!important}
+  .hm-ui-header nav a {color:#fff!important;border-color:var(--hm-gold)!important}
+  .hm-ui-header nav a:hover {background:#17384a}
+  .hm-ui-header a:hover {text-decoration:underline;text-underline-offset:4px}
+  .hm-ui-header button {color:#fff}
+  .hm-ui-header button:hover {background:#17384a;color:#fff}
+  .hm-ui-header button[data-slot="button"][class*="border"] {background:#17384a}
+  .hm-ui-header .hm-tool-logo {border:1px solid var(--hm-gold);border-radius:50%;object-fit:contain;background:var(--hm-navy)}
+  button:focus-visible,a:focus-visible {outline:3px solid var(--hm-gold);outline-offset:3px}
+  /* A single static header replaces overlapping branding bars on these pilots. */
+  #hm-tools-hub-bar,#hm-tools-brand-chip {display:none!important}
+  [data-hm-tools-offset-header] {top:0!important}
+}
+@media screen and (max-width:640px) {
+  .hm-ui-header > .container {flex-wrap:wrap;gap:12px}
+  .hm-ui-header h1 {font-size:1rem}
+}
